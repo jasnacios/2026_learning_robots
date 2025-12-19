@@ -17,7 +17,7 @@
 
 variable    d equal 1 # Taille des particules
 variable	N equal 64 # nombres de particules
-variable 	l equal 4.25 # rayon de la zone lumineuse
+variable 	l equal 4.15 # rayon de la zone lumineuse
 variable    L equal 15
 variable    c equal 8
 variable	runtime_Main equal 18000000	# 2heures en temps de simulations
