@@ -26,6 +26,7 @@ class FixSelfAlignment : public Fix {
   void post_force(int);
 
  private:
+ double zetaa;
 };
 
 }

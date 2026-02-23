@@ -33,7 +33,7 @@ Fix(lmp, narg, arg)
   region0 = domain->get_region_by_id(arg[5]);
   idregion1 = utils::strdup(arg[6]);
   region1 = domain->get_region_by_id(arg[6]);
-  comm_radius2 = utils::numeric(FLERR,arg[7],false,lmp);
+  comm_radius = utils::numeric(FLERR,arg[7],false,lmp);
   alpha = utils::numeric(FLERR,arg[8],false,lmp);
   Nn = utils::numeric(FLERR,arg[9],false,lmp);
   seed = utils::numeric(FLERR,arg[10],false,lmp);
@@ -100,12 +100,12 @@ void FixRobotLearning::post_force(int vflag)
   numneigh = list->numneigh;
   firstneigh = list->firstneigh;
 
- 
+  const double epsilon = 1.0e-10;
+  const double comm_radius_sq = comm_radius * comm_radius;
   
   if (step < 1) {
     for (int i = 0; i < nlocal; i++) {
     qreward[i] = 0.0;
-    // ztorque[i] = 0.0;
     for (int k = 0; k < Nn; k++){
       poidsnn[i][k] = random->uniform();}}
   }
@@ -129,14 +129,14 @@ void FixRobotLearning::post_force(int vflag)
         rsq = delx * delx + dely * dely + delz * delz;
           
         if(rsq == 0) continue;
-        if (rsq < comm_radius2) {
-          if (qreward[i] > qreward[j] ) {
+        if (rsq < comm_radius_sq) {
+          if (qreward[i] > qreward[j]+epsilon) {
               qreward[j] += alpha*(qreward[i] - qreward[j])*dt;
               for (int k = 0; k<Nn; k++) {
                 poidsnn[j][k] += alpha*(poidsnn[i][k] - poidsnn[j][k])*dt;
               }
             }
-          if (qreward[i] < qreward[j]) {
+          if (qreward[i] < qreward[j]-epsilon) {
               qreward[i] += alpha*(qreward[j] - qreward[i])*dt;
               for (int k = 0; k<Nn; k++) {
                 poidsnn[i][k] += alpha*(poidsnn[j][k] - poidsnn[i][k])*dt;

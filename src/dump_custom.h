@@ -155,6 +155,7 @@ class DumpCustom : public Dump {
 
   // new per-atom variables
   void pack_ang2D(int);
+  void pack_zeta(int);
   void pack_qreward(int);
   void pack_poidsnn0(int);
   void pack_poidsnn1(int);
