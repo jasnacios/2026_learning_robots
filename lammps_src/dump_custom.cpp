@@ -44,7 +44,7 @@ enum{ID,MOL,PROC,PROCP1,TYPE,TYPELABEL,ELEMENT,MASS,
      IX,IY,IZ,
      VX,VY,VZ,FX,FY,FZ,
      Q,MUX,MUY,MUZ,MU,RADIUS,DIAMETER,
-     ANG2D, QREWARD, POIDSNN0,POIDSNN1,POIDSNN2, POIDSNN3, POIDSNN4, POIDSNN5, POIDSNN6, POIDSNN7, 
+     ZETA, ANG2D, QREWARD, POIDSNN0,POIDSNN1,POIDSNN2, POIDSNN3, POIDSNN4, POIDSNN5, POIDSNN6, POIDSNN7, 
      OMEGAX,OMEGAY,OMEGAZ,ANGMOMX,ANGMOMY,ANGMOMZ,
      TQX,TQY,TQZ,
      COMPUTE,FIX,VARIABLE,IVEC,DVEC,IARRAY,DARRAY};
@@ -847,6 +847,11 @@ int DumpCustom::count()
           error->all(FLERR,"Threshold for an atom property that isn't allocated");
         ptr = atom->ang2D;
         nstride = 1; 
+      }else if (thresh_array[ithresh] == ZETA) {
+        if (!atom->zeta_flag)
+          error->all(FLERR,"Threshold for an atom property that isn't allocated");
+        ptr = atom->zeta;
+        nstride = 1; 
       } else if (thresh_array[ithresh] == QREWARD) {
         if (!atom->qreward_flag)
           error->all(FLERR,"Threshold for an atom property that isn't allocated");
@@ -1503,7 +1508,10 @@ int DumpCustom::parse_fields(int narg, char **arg)
     } else if (strcmp(arg[iarg],"ang2D") == 0){
       pack_choice[iarg] = &DumpCustom::pack_ang2D;
       vtype[iarg] = Dump::DOUBLE;
-    } else if (strcmp(arg[iarg],"qreward") == 0){
+    } else if (strcmp(arg[iarg],"zeta") == 0){
+      pack_choice[iarg] = &DumpCustom::pack_zeta;
+      vtype[iarg] = Dump::DOUBLE;
+    }else if (strcmp(arg[iarg],"qreward") == 0){
       pack_choice[iarg] = &DumpCustom::pack_qreward;
       vtype[iarg] = Dump::DOUBLE;
     } else if (strcmp(arg[iarg],"poidsnn0") == 0){
@@ -2063,6 +2071,7 @@ int DumpCustom::modify_param(int narg, char **arg)
     else if (strcmp(arg[1],"mass") == 0) thresh_array[nthresh] = MASS;
 
     else if (strcmp(arg[1],"ang2D") == 0) thresh_array[nthresh] = ANG2D;
+    else if (strcmp(arg[1],"zeta") == 0) thresh_array[nthresh] = ZETA;
     else if (strcmp(arg[1],"qreward") == 0) thresh_array[nthresh] = QREWARD;
     else if (strcmp(arg[1],"poidsnn0") == 0) thresh_array[nthresh] = POIDSNN0;
     else if (strcmp(arg[1],"poidsnn1") == 0) thresh_array[nthresh] = POIDSNN1;
@@ -2509,6 +2518,15 @@ void DumpCustom::pack_ang2D(int n)
 
   for (int i = 0; i < nchoose; i++) {
     buf[n] = ang2D[clist[i]];
+    n += size_one;
+  }
+}
+void DumpCustom::pack_zeta(int n)
+{
+  double *zeta = atom->zeta;
+
+  for (int i = 0; i < nchoose; i++) {
+    buf[n] = zeta[clist[i]];
     n += size_one;
   }
 }

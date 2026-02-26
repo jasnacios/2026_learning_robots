@@ -19,12 +19,13 @@ using namespace FixConst;
 FixSelfBrownian2D::FixSelfBrownian2D(LAMMPS *lmp, int narg, char **arg) :
 Fix(lmp, narg, arg)
 {
-  if (narg < 7) error->all(FLERR,"Illegal fix brownian/2d command");
+  if (narg < 8) error->all(FLERR,"Illegal fix brownian/2d command");
   
   frtt = utils::numeric(FLERR,arg[3],false,lmp);
   frtr = utils::numeric(FLERR,arg[4],false,lmp);
   Dt = utils::numeric(FLERR,arg[5],false,lmp);
-  seed = utils::numeric(FLERR,arg[6],false,lmp);
+  Dr = utils::numeric(FLERR,arg[6],false,lmp);
+  seed = utils::numeric(FLERR,arg[7],false,lmp);
   
   random = new RanMars(lmp, seed + comm->me);
   
@@ -72,7 +73,7 @@ void FixSelfBrownian2D::initial_integrate(int /* vflag */)
   double **x = atom->x;
   double **v = atom->v;
   double *ztorque = atom->ztorque;
-  double *Dr = atom->Dr;
+
 
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
@@ -83,7 +84,6 @@ void FixSelfBrownian2D::initial_integrate(int /* vflag */)
     for (int i = 0; i < nlocal; i++){       
   
       ang2D[i] = random->uniform() * 2.0 * M_PI;
-      Dr[i] = 0.02;
   
        }
   }
@@ -93,7 +93,7 @@ void FixSelfBrownian2D::initial_integrate(int /* vflag */)
       if (mask[i] & groupbit) {
         double dx = f[i][0]/frtt*dt + sqrt(2.0*Dt*dt/(frtt*frtt))*random->gaussian();
         double dy = f[i][1]/frtt*dt + sqrt(2.0*Dt*dt/(frtt*frtt))*random->gaussian();
-        double dtheta = dt*ztorque[i]/frtr + sqrt(2.0*Dr[i]*dt/(frtr*frtr))*random->gaussian();
+        double dtheta = dt*ztorque[i]/frtr + sqrt(2.0*Dr*dt/(frtr*frtr))*random->gaussian();
       
         // Appliquer la force
         x[i][0] += dx;

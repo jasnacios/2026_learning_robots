@@ -19,7 +19,7 @@ FixSelfAlignment::FixSelfAlignment(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg)
 {
   if (narg < 3) error->all(FLERR,"Illegal fix /active/force command");
-
+  zetaa = utils::numeric(FLERR,arg[3],false,lmp);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -61,14 +61,13 @@ void FixSelfAlignment::post_force(int vflag)
 
   if (step <= 1) {
     for (int i = 0; i < nlocal; i++){       
-        zeta[i] = 0.0;
+        zeta[i] = zetaa;
        }
   }
 
   if (step > 1) {
     for (int i = 0; i < nlocal; i++) {
         if (mask[i] & groupbit) {
-           zeta[i] = 0.0;
           double fx = Fa[i] * cos(ang2D[i]);
           double fy = Fa[i] * sin(ang2D[i]);
           double Cz = zeta[i] *  (cos(ang2D[i]) * v[i][1] - sin(ang2D[i]) * v[i][0]);

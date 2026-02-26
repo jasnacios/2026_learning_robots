@@ -28,7 +28,7 @@ class FixSelfBrownian2D : public Fix {
   
 
  private:
-  double frtt, frtr, Dt;
+  double frtt, frtr, Dt, Dr;
   int seed;
   double dt;
   class RanMars *random;
