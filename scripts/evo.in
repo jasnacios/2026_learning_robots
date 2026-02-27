@@ -2,36 +2,31 @@
 #     test_evo.run
 # ----------------------------------------
 #
-# Simulations END to END: 1000 particules de diamètre de d = 4.8 cm et pouvant aller
-# à une vitesse 12cm/s = 2.5d/s vivent dans un arene de diamètre 590cm ou une zone
-# lumineuse de diamètre 145cm est placée au centre. l'échelle caractéristique de temps est
+# Simulations END to END: 64 particules de diamètre de d = 4.8 cm et pouvant aller
+# à une vitesse 12cm/s = 2.5d/s vivent dans un arene de diamètre 150cm ou une zone
+# lumineuse de diamètre 36cm est placée au centre. l'échelle caractéristique de temps est
 # tau = 1/2.5  = 0.4s soit 2.5tau = 1s et 18000 tau = 7200s = 2h
 # Expérimentalement, le temps d'intégration est T = 62.5 s soit T = 156 tau. or alphaq = ln(100)/T = 0.03.
 # On peut essayer différentes valeurs pour DP
 # 
-#of columns changed from 14 to 2 at row 
+#
 
 # ------------------------------------------
 # PARAMETRES 
 # ------------------------------------------
 
-variable    d equal 1 # Taille des particules
-variable	N equal 64 # nombres de particules
-variable 	l equal 4.15 # rayon de la zone lumineuse
-variable    L equal 15
-variable    c equal 8
-variable	runtime_Main equal 18000000	# 2heures en temps de simulations
-variable	dump_freq equal 2500	# on récupère les données toutes les secondes
-variable	dt equal 0.001
-variable    num_controller equal 4
 
-variable    comm_radius2 equal 1.25
+variable	dt equal 0.001
+variable    d equal 1 # Taille des particules
+variable    c equal 0
+variable    comm_radius equal 1.122
 variable    alpha equal 1000.0
+variable    num_controller equal 4
 
 variable    gamma_t equal 1.0
 variable    gamma_r equal 1.0
 variable    Dt equal 0.0
-
+variable    zeta equal 0.0
 
 variable    Nn equal 8
 
@@ -97,17 +92,17 @@ reset_timestep	0
 # Set up main run: change particle interactions to  WCA.
 pair_style	    lj/cut ${WCA_cut} 
 pair_modify	    shift yes #shifts LJ to become WCA
-pair_coeff	    * * 1 1.0 ${WCA_cut}  #Cutoff LJ at minima to become WCA
+pair_coeff	    * * 0 1.0 ${WCA_cut}  #Cutoff LJ at minima to become WCA
 
-fix             1 all robot_learning ${alphaq} ${Dp} light light ${comm_radius2} ${alpha} ${Nn} ${Seed} 
-fix             2 all controler ${num_controller}
-fix             3 all self_alignment
-fix             4 all SelfBrownian2D ${gamma_t} ${gamma_r} ${Dt}  ${Seed}
+fix             1 all robot_learning ${alphaq} ${Dp} light light ${comm_radius} ${alpha} ${Nn} ${Seed} 
+fix             2 all controler ${num_controller} ${Nn} 0
+fix             3 all self_alignment ${zeta}
+fix             4 all SelfBrownian2D ${gamma_t} ${gamma_r} ${Dt} ${Dr} ${Seed}
 
 
 compute         cNN all poidsnn/atom ${Nn}
 
-dump            dNN all custom ${dump_freq} dumpnn_${Dp}_${alphaq}_${Seed}.txt id c_cNN[*] x y vx vy
+dump            dNN all custom ${dump_freq} dumpnn_${Dp}_${alphaq}_${Dr}_${Seed}.txt id c_cNN[*] x y vx vy
 dump_modify     dNN sort id
 run             ${runtime_Main}
  
