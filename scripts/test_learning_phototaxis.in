@@ -1,0 +1,117 @@
+# ----------------------------------------
+#     test_learning_phototaxis.in
+# ----------------------------------------
+
+
+# ------------------------------------------
+# PARAMETRES 
+# ------------------------------------------
+
+# set the random seed:
+variable Seed index 483729
+
+# set the number of particles:
+variable    N equal 100 
+
+# Set the size of the bos, and light diameter: 
+variable    L equal 13.8
+variable    l equal 4.7
+
+# set the time step, the total number of steps, and the frequency of dumping data:
+variable	dt equal 0.001
+variable    runtime_Main equal 20000000
+variable    dump_freq equal 10000
+
+
+# set the controler: 
+variable    num_controller equal 8
+
+#set the "size" of the neural network: 
+variable    Nn equal 152
+variable    h equal 10 # in case of MLP, sets the thickness of the hidden layer
+
+# set the learning parameters: 
+variable    comm_radius equal 1.122
+
+variable    alphaq equal 0.03
+variable    alpha equal 1000.0
+variable    Dp equal 1e-05 
+
+# set the physical parameters related to friction and noise:
+variable    gamma_t equal 1.0
+variable    gamma_r equal 1.0
+
+variable    Dt equal 0.0
+variable    Dr equal 0.1
+variable    zeta equal 0.0
+
+
+
+# --------------------------------------------
+# DÉFINITION DES DIFFÉRENTES RÉGIONS: 
+# BOITE DE SIMU, ZONE INITIALE, ZONE LUMINEUSE 
+# --------------------------------------------
+# boite carrée, lumière=cylindre
+region          full_box block -$L $L -$L $L -0.2 0.2 units box
+region          light cylinder z 0.0 0.0 $l -10 10 units box
+
+
+
+
+# ----------------------------------
+# UNITES, DIMENSION, ATOME ET BOITE
+# ---------------------------------
+
+units           lj
+dimension       3
+boundary        p p p
+atom_style      hybrid sphere polar2D learner sap
+create_box      1 full_box
+timestep        ${dt}
+variable	    WCA_cut equal 1.122
+
+
+# -----------------------------------------------------------------------------
+# PERFORM A SHORT BROWNIAN MOTION WITH A REPULSIVE POTENTIAL GRADUALLY 
+# INCREASING FROM ZERO THIS STEP IS MADE TO REMOVE OVERLAPS BEFORE THE MAIN RUN
+# -----------------------------------------------------------------------------
+variable 	    runtime_Soft equal 50000
+
+#set up equilibration run: add particles randomly to box with soft potential.
+pair_style      soft ${WCA_cut}
+pair_coeff      * * 0.0
+variable        prefactor equal ramp(0,100) # strength of soft potential is increase slowly over time
+create_atoms	1 random ${N} ${Seed} full_box # adding N particles randomly to the entire simulation box
+set             type * diameter 1.0
+
+fix             1 all brownian 0.0001 ${Seed} gamma_t 1.0 #run a passive brownian to remove overlaps
+fix             2 all adapt 1 pair soft a * * v_prefactor
+thermo		    50000
+run             ${runtime_Soft}
+unfix		    1
+unfix           2
+
+
+reset_timestep	0 
+
+# -----------------------------------------------------------------------------
+# MAIN RUN: ACTIVE BROWNIAN PARTICLES LEARNING TO PERFORM PHOTOTAXIS
+# -----------------------------------------------------------------------------
+
+# Set up main run: change particle interactions to  WCA.
+pair_style	    lj/cut ${WCA_cut} 
+pair_modify	    shift yes #shifts LJ to become WCA
+pair_coeff	    * * 0 1.0 ${WCA_cut}  #Cutoff LJ at minima to become WCA
+
+fix             1 all robot_learning ${alphaq} ${Dp} light light ${comm_radius} ${alpha} ${Nn} ${Seed} 
+fix             2 all controler ${num_controller} ${Nn} ${h}
+fix             3 all self_alignment ${zeta}
+fix             4 all SelfBrownian2D ${gamma_t} ${gamma_r} ${Dt} ${Dr} ${Seed}
+
+
+compute         cNN all poidsnn/atom ${Nn}
+
+dump            dNN all custom ${dump_freq} dumpnn_${num_controller}_${Dp}_${alphaq}_${Dr}_${Seed}.txt id c_cNN[*] x y vx vy
+dump_modify     dNN sort id
+run             ${runtime_Main}
+ 
