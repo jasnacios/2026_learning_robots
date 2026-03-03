@@ -19,7 +19,7 @@ using namespace FixConst;
 FixControler::FixControler(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg)
 {
-  if (narg < 4) error->all(FLERR,"Illegal fix /active/force command");
+  if (narg < 6) error->all(FLERR,"Illegal fix /active/force command");
 
   nc = utils::numeric(FLERR,arg[3],false,lmp);
   Nn = utils::numeric(FLERR,arg[4],false,lmp);
@@ -199,13 +199,13 @@ if (nc == 8) {
       x_out_l += w[index++]; // bias
 
       if (l == 0) layer_out[l] = sigmoid(x_out_l);
-      if (l == 1) layer_out[l] = std::tanh(x_out_l);
+      if (l == 1) layer_out[l] = sigmoid(x_out_l);
     }
 
     double f_d = layer_out[0];
     double f_g = layer_out[1];
 
-    Fa[i]      = 0.5 * (f_d + f_g);
+    Fa[i]      =  th_trun(0.5 * (f_d + f_g));
     ztorque[i] = 0.5 * (f_d - f_g);
   }
 }

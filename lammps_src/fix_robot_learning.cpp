@@ -24,7 +24,7 @@ using namespace FixConst;
 FixRobotLearning::FixRobotLearning(LAMMPS *lmp, int narg, char **arg) :
 Fix(lmp, narg, arg)
 {
-  if (narg < 9) error->all(FLERR,"Illegal fix brownian/2d command");
+  if (narg < 11) error->all(FLERR,"Illegal fix robot_learning command");
   
  
   alphaq = utils::numeric(FLERR,arg[3],false,lmp);

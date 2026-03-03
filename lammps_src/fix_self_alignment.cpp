@@ -18,7 +18,7 @@ using namespace FixConst;
 FixSelfAlignment::FixSelfAlignment(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg)
 {
-  if (narg < 3) error->all(FLERR,"Illegal fix /active/force command");
+  if (narg < 4) error->all(FLERR,"Illegal fix /active/force command");
   zetaa = utils::numeric(FLERR,arg[3],false,lmp);
 }
 
