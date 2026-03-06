@@ -5,21 +5,21 @@
 ------------------------------------------------------------------------- */
 #ifdef FIX_CLASS
 // clang-format off
-FixStyle(SelfBrownian2D,FixSelfBrownian2D);
+FixStyle(IntegrationLearning,FixIntegrationLearning);
 // clang-format on
 #else
 
-#ifndef LMP_FIX_SELF_BROWNIAN2D_H
-#define LMP_FIX_SELF_BROWNIAN2D_H
+#ifndef LMP_FIX_INTEGRATION_LEARNING_H
+#define LMP_FIX_INTEGRATION_LEARNING_H
 
 #include "fix.h"
 
 namespace LAMMPS_NS {
 
-class FixSelfBrownian2D : public Fix {
+class FixIntegrationLearning : public Fix {
  public:
-  FixSelfBrownian2D(class LAMMPS *, int, char **);
-  ~FixSelfBrownian2D();
+  FixIntegrationLearning(class LAMMPS *, int, char **);
+  ~FixIntegrationLearning();
   int setmask();
   void init();
   void setup(int);
@@ -27,7 +27,8 @@ class FixSelfBrownian2D : public Fix {
   
 
  private:
-  double frtt, frtr, Dt, Dr;
+  double Dp;
+  int Nn;
   int seed;
   double dt;
   class RanMars *random;

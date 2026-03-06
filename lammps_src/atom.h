@@ -77,7 +77,7 @@ class Atom : protected Pointers {
   double *rmass;
   double *q, **mu;
   //new variables
-  double **poidsnn, *qreward, *lightintensity;
+  double **poidsnn, **dpoids, *qreward,*dreward, *lightintensity;
   double *ang2D,*ztorque;
   double *Dr, *Fa, *zeta;
 
@@ -198,7 +198,7 @@ class Atom : protected Pointers {
   int molecule_flag, molindex_flag, molatom_flag;
   int q_flag, mu_flag;
   //new variables
-  int poidsnn_flag, qreward_flag, lightintensity_flag;
+  int poidsnn_flag,dpoids_flag, qreward_flag, dreward_flag, lightintensity_flag;
   int ang2D_flag, ztorque_flag;
   int Dr_flag, Fa_flag, zeta_flag;
   //

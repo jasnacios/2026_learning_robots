@@ -33,7 +33,9 @@ class AtomVecLearner : virtual public AtomVec {
 
  protected:
   double **poidsnn;
+  double **dpoids;
   double *qreward;
+  double *dreward;
   double *lightintensity;
 }; 
 

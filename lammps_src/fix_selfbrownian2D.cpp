@@ -107,13 +107,3 @@ void FixSelfBrownian2D::initial_integrate(int /* vflag */)
     }
   }
 }
-
-/* ---------------------------------------------------------------------- */
-
-void FixSelfBrownian2D::final_integrate()
-{
-  // Rien à faire ici, mais nécessaire pour l'intégration temporelle
-}
-
-/* ---------------------------------------------------------------------- */
-

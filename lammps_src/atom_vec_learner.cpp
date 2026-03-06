@@ -36,16 +36,22 @@ AtomVecLearner::AtomVecLearner(LAMMPS *lmp) : AtomVec(lmp)
   // strings cannot contain fields in corresponding AtomVec default strings
   // order of fields in a string does not matter
   // except: fields_data_atom & fields_data_vel must match data file
+  
+  fields_create = { "poidsnn","dpoids", "qreward", "dreward", "lightintensity"};
+  fields_exchange = { "poidsnn", "dpoids", "qreward", "dreward", "lightintensity"};
+  fields_grow = { "poidsnn", "dpoids", "qreward", "dreward", "lightintensity"};
+  
+  fields_copy = { "poidsnn", "dpoids", "qreward", "dreward", "lightintensity"};
+  fields_comm = { "poidsnn", "dpoids", "qreward", "dreward", "lightintensity"};
+  // fields_reverse = { "poidsnn", "qreward", "lightintensity"};
 
-  fields_grow = { "poidsnn", "qreward", "lightintensity"};
-  fields_copy = { "poidsnn", "qreward", "lightintensity"};
-  fields_border = { "poidsnn", "qreward","lightintensity"};
-  fields_border_vel = { "poidsnn", "qreward", "lightintensity"};
-  fields_exchange = { "poidsnn", "qreward", "lightintensity"};
-  fields_restart = { "poidsnn", "qreward", "lightintensity"};
-  fields_create = { "poidsnn", "qreward", "lightintensity"};
-  fields_data_atom = {"id", "type", "x"};
-  fields_data_vel = {"id", "v"};
+
+  fields_border = { "poidsnn", "dpoids", "qreward","dreward", "lightintensity"};
+  
+  fields_restart = { "poidsnn", "dpoids", "qreward", "dreward", "lightintensity"};
+ 
+ fields_data_atom = {"id", "type", "x"};
+fields_data_vel = {"id", "v"};
 
   setup_fields();
 }
@@ -58,7 +64,9 @@ AtomVecLearner::AtomVecLearner(LAMMPS *lmp) : AtomVec(lmp)
 void AtomVecLearner::grow_pointers()
 {
   poidsnn = atom->poidsnn;
+  dpoids = atom->dpoids;
   qreward = atom->qreward;
+  dreward = atom->dreward;
   lightintensity = atom->lightintensity;
 }
 

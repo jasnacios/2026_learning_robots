@@ -122,7 +122,9 @@ Atom::Atom(LAMMPS *_lmp) : Pointers(_lmp), atom_style(nullptr), avec(nullptr), a
 
   //new variables
   poidsnn = nullptr;
+  dpoids = nullptr;
   qreward = nullptr;
+  dreward = nullptr;
   lightintensity = nullptr;
   ang2D = nullptr;
   ztorque = nullptr;
@@ -435,8 +437,10 @@ void Atom::peratom_create()
   add_peratom("ztorque",&ztorque,DOUBLE,0);
 
   add_peratom("qreward",&qreward,DOUBLE,0); 
+  add_peratom("dreward",&dreward,DOUBLE,0);
   add_peratom("lightintensity",&lightintensity,DOUBLE,0);
   add_peratom("poidsnn",&poidsnn,DOUBLE,200); 
+  add_peratom("dpoids",&dpoids,DOUBLE,200); 
 
   add_peratom("Dr",&Dr,DOUBLE,0);
   add_peratom("Fa",&Fa,DOUBLE,0);
@@ -666,7 +670,7 @@ void Atom::set_atomflag_defaults()
   molecule_flag = molindex_flag = molatom_flag = 0;
   q_flag = mu_flag = 0;
   //new variables
-  qreward_flag = poidsnn_flag = lightintensity_flag = 0;
+  qreward_flag = poidsnn_flag = dreward_flag = dpoids_flag = lightintensity_flag = 0;
   ang2D_flag = ztorque_flag = 0;
   Dr_flag = Fa_flag = zeta_flag = 0;
   //
@@ -3064,7 +3068,9 @@ void *Atom::extract(const char *name)
   if (strcmp(name,"mu") == 0) return (void *) mu;
   //new variables
   if (strcmp(name,"poidsnn") == 0) return (void *) poidsnn;
+  if (strcmp(name,"dpoids") == 0) return (void *) dpoids;
   if (strcmp(name,"qreward") == 0) return (void *) qreward;
+  if (strcmp(name,"dreward") == 0) return (void *) dreward;
   if (strcmp(name,"lightintensity") == 0) return (void *) lightintensity; 
   if (strcmp(name,"ang2D") == 0) return (void *) ang2D;
   if (strcmp(name,"ztorque") == 0) return (void *) ztorque;
@@ -3219,6 +3225,8 @@ int Atom::extract_datatype(const char *name)
   if (strcmp(name,"ang2D") == 0) return LAMMPS_DOUBLE;
   if (strcmp(name,"ztorque") == 0) return LAMMPS_DOUBLE;
   if (strcmp(name,"poidsnn") == 0) return LAMMPS_DOUBLE_2D;
+  if (strcmp(name,"dpoids") == 0) return LAMMPS_DOUBLE_2D;
+  if (strcmp(name,"dreward") == 0) return LAMMPS_DOUBLE;
   //
   if (strcmp(name,"omega") == 0) return LAMMPS_DOUBLE_2D;
   if (strcmp(name,"angmom") == 0) return LAMMPS_DOUBLE_2D;
@@ -3354,6 +3362,8 @@ int Atom::extract_size(const char *name, int type)
       if (strcmp(name,"f") == 0) return nall;
       if (strcmp(name,"mu") == 0) return nall;
       if (strcmp(name,"poidsnn") == 0) return nall;
+      if (strcmp(name,"dpoids") == 0) return nall;
+      if (strcmp(name,"dqre") == 0) return nall;
       if (strcmp(name,"omega") == 0) {
         if (ghost_vel) return nall;
         else return nlocal;
@@ -3403,6 +3413,7 @@ int Atom::extract_size(const char *name, int type)
       if (strcmp(name,"f") == 0) return 3;
       if (strcmp(name,"mu") == 0) return 4;
       if (strcmp(name,"poidsnn") == 0) return 200;
+      if (strcmp(name,"dpoids") == 0) return 200;
       if (strcmp(name,"omega") == 0) return 3;
       if (strcmp(name,"angmom") == 0) return 3;
       if (strcmp(name,"torque") == 0) return 3;
