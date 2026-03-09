@@ -23,7 +23,7 @@ class FixIntegrationLearning : public Fix {
   int setmask();
   void init();
   void setup(int);
-  void initial_integrate(int);
+  void end_of_step();
   
 
  private:

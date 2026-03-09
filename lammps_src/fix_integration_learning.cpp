@@ -29,7 +29,7 @@ Fix(lmp, narg, arg)
   random = new RanMars(lmp, seed + comm->me);
   
   // Indiquer que ce fix réalise une intégration temporelle 
-  time_integrate = 1;
+  time_integrate = 0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -52,7 +52,7 @@ void FixIntegrationLearning::init()
 int FixIntegrationLearning::setmask()
 {
   int mask = 0;
-  mask |= FINAL_INTEGRATE;
+  mask |= END_OF_STEP;
   return mask;
 }
 
@@ -60,12 +60,12 @@ int FixIntegrationLearning::setmask()
 
 void FixIntegrationLearning::setup(int vflag)
 {
-  initial_integrate(vflag);
+  end_of_step();
 }
 
 /* ---------------------------------------------------------------------- */
 
-void FixIntegrationLearning::initial_integrate(int /* vflag */)
+void FixIntegrationLearning::end_of_step()
 {
   double **poidsnn = atom->poidsnn;
   double **dpoids = atom->dpoids;

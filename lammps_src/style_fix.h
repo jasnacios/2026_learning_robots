@@ -59,6 +59,7 @@
 #include "fix_respa.h"
 #include "fix_restrain.h"
 #include "fix_robot_force_learning.h"
+#include "fix_robot_force_learning_2.h"
 #include "fix_robot_learning.h"
 #include "fix_robot_learning2.h"
 #include "fix_self_alignment.h"

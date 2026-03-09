@@ -3,7 +3,7 @@
  http://lammps.sandia.gov, Sandia National Laboratories
  Steve Plimpton, sjplimp@sandia.gov
 ------------------------------------------------------------------------- */
-#include "fix_robot_force_learning.h"
+#include "fix_robot_force_learning_2.h"
 #include <cmath>
 #include "atom.h"
 #include "update.h"
@@ -13,7 +13,6 @@
 #include "region.h"
 #include "domain.h"
 #include "neigh_list.h"
-#include "neigh_request.h"
 #include "neighbor.h"
 #include "memory.h"
 
@@ -22,10 +21,10 @@ using namespace FixConst;
 
 /* ---------------------------------------------------------------------- */
 
-FixRobotForceLearning::FixRobotForceLearning(LAMMPS *lmp, int narg, char **arg) :
+FixRobotForceLearning2::FixRobotForceLearning2(LAMMPS *lmp, int narg, char **arg) :
 Fix(lmp, narg, arg)
 {
-  if (narg < 12) error->all(FLERR,"Illegal fix robot_force_learning command");
+  if (narg < 12) error->all(FLERR,"Illegal fix robot_force_learning_2    command");
   
  
   alphaq = utils::numeric(FLERR,arg[3],false,lmp);
@@ -46,34 +45,19 @@ Fix(lmp, narg, arg)
 
 /* ---------------------------------------------------------------------- */
 
-FixRobotForceLearning::~FixRobotForceLearning()
+FixRobotForceLearning2::~FixRobotForceLearning2()
 {
   delete random;
 }
 
 /* ---------------------------------------------------------------------- */
 
-void FixRobotForceLearning::init()
+void FixRobotForceLearning2::init()
 {
   dt = update->dt;
-  int nall = atom->nlocal + atom->nghost;
-  double *qreward = atom->qreward;
-  double **poidsnn = atom->poidsnn;
-
-  
-  auto req = neighbor->add_request(this, NeighConst::REQ_FULL);
-  req->set_id(1);
-  req->set_cutoff(comm_radius);
-  
-}
-void FixRobotForceLearning::init_list(int id, NeighList *ptr)
-{
-  if (id == 1) list = ptr;
 }
 
-/* ---------------------------------------------------------------------- */
-
-int FixRobotForceLearning::setmask()
+int FixRobotForceLearning2::setmask()
 {
   int mask = 0;
   mask |= POST_FORCE;
@@ -82,17 +66,17 @@ int FixRobotForceLearning::setmask()
 
 /* ---------------------------------------------------------------------- */
 
-void FixRobotForceLearning::setup(int vflag)
+void FixRobotForceLearning2::setup(int vflag)
 {
   post_force(vflag);
 }
 
 /* ---------------------------------------------------------------------- */
 
-void FixRobotForceLearning::post_force(int vflag)
+void FixRobotForceLearning2::post_force(int vflag)
 {
+  NeighList *list = neighbor->lists[0];
 
-  this->list; 
   int i, j, ii, jj, inum, jnum;
   double xtmp, ytmp, ztmp, delx, dely, delz;
   double rsq;
@@ -124,7 +108,7 @@ void FixRobotForceLearning::post_force(int vflag)
     for (int i = 0; i < nlocal; i++) {
         qreward[i] = 0.0;
         dreward[i] = 0.0;
-        for (int k = 0; k < Nn; k++) {
+        for (int k = 0; k < Nn; k++){
           poidsnn[i][k] = random->uniform();
           dw[i][k] = 0.0;
         }
@@ -178,9 +162,9 @@ void FixRobotForceLearning::post_force(int vflag)
     for (int i = 0; i < nlocal; i++) {
       if (mask[i] & groupbit) {
         if(region0->match(x[i][0], x[i][1], x[i][2])|| region1->match(x[i][0], x[i][1], x[i][2])) {
-          lightintensity[i] = 0.9;
+          lightintensity[i] = 0.7;
         } else {
-          lightintensity[i] = 0.1;
+          lightintensity[i] = 0.3;
         } 
         dreward[i] += alphaq*(lightintensity[i] - qreward[i]) *dt;
       }

@@ -8,20 +8,20 @@
 # ------------------------------------------
 
 # set the random seed:
-variable Seed index 444444#25389
+variable Seed index 25389
 
 # set the number of particles:
-variable    N equal 100
-
+variable    N equal 2
+variable c equal 0
 # Set the size of the bos, and light diameter: 
-variable    L equal 17.3
-variable    l equal 4.7
-variable    c equal 9
+variable    L equal 3
+variable    l equal 0.5
+
 
 # set the time step, the total number of steps, and the frequency of dumping data:
 variable	dt equal 0.001
 variable    runtime_Main equal 1000000
-variable    dump_freq equal 10000
+variable    dump_freq equal 1
 
 
 # set the controler: 
@@ -43,7 +43,7 @@ variable    gamma_t equal 1.0
 variable    gamma_r equal 1.0
 
 variable    Dt equal 0.0
-variable    Dr equal 0.1
+variable    Dr equal 0.0
 variable    zeta equal 0.0
 
 
@@ -81,50 +81,31 @@ variable	    WCA_cut equal 1.122
 # PERFORM A SHORT BROWNIAN MOTION WITH A REPULSIVE POTENTIAL GRADUALLY 
 # INCREASING FROM ZERO THIS STEP IS MADE TO REMOVE OVERLAPS BEFORE THE MAIN RUN
 # -----------------------------------------------------------------------------
-variable 	    runtime_Soft equal 50000
 
-#set up equilibration run: add particles randomly to box with soft potential.
-pair_style      soft ${WCA_cut}
-pair_coeff      * * 0.0
-variable        prefactor equal ramp(0,100) # strength of soft potential is increase slowly over time
-create_atoms	1 random ${N} ${Seed} full_box # adding N particles randomly to the entire simulation box
+create_atoms 1 single 0.0 0.0 0.0
+create_atoms 1 single 2.0 0.0 0.0
+create_atoms 1 single -0.8 0.0 0.0
+
+#group atom1 id 1
+#group atom2 id 2
+
+
+#velocity atom1 set 0.0 0.0 0.0
+#velocity atom2 set 1.0 0.0 0.0
+
 set             type * diameter 1.0
+neighbor 0.3 bin
+comm_modify cutoff 1.5
 
-fix             1 all brownian 0.0001 ${Seed} gamma_t 1.0 #run a passive brownian to remove overlaps
-fix             2 all adapt 1 pair soft a * * v_prefactor
-thermo		    50000
-run             ${runtime_Soft}
-unfix		    1
-unfix           2
-
-
-reset_timestep	0 
-
-# -----------------------------------------------------------------------------
-# MAIN RUN: ACTIVE BROWNIAN PARTICLES LEARNING TO PERFORM PHOTOTAXIS
-# -----------------------------------------------------------------------------
-
-# Set up main run: change particle interactions to  WCA.
-pair_style	    lj/cut ${WCA_cut} 
-pair_modify	    shift yes #shifts LJ to become WCA
-pair_coeff	    * * 1.0 1.0 ${WCA_cut}  #Cutoff LJ at minima to become WCA
-
-
-fix              1 all robot_force_learning2 ${alphaq} ${Dp} light light ${comm_radius} ${alpha} ${Nn} ${Seed} 0
+fix              1 all robot_force_learning ${alphaq} ${Dp} light light ${comm_radius} ${alpha} ${Nn} ${Seed} 0
 fix              2 all controler ${num_controller} ${Nn} ${h}
 fix              3 all self_alignment ${zeta}
 fix              4 all SelfBrownian2D ${gamma_t} ${gamma_r} ${Dt} ${Dr} ${Seed}
 fix              5 all IntegrationLearning ${Dp} ${Nn} ${Seed}
 
-#fix             1 all robot_learning ${alphaq} ${Dp} light light ${comm_radius} ${alpha} ${Nn} ${Seed} 0 
-#fix             2 all controler ${num_controller} ${Nn} ${h}
-#fix             3 all self_alignment ${zeta}
-#fix             4 all SelfBrownian2D ${gamma_t} ${gamma_r} ${Dt} ${Dr} ${Seed}
-
-
 compute         cNN all poidsnn/atom ${Nn}
 
 dump            dNN all custom ${dump_freq} dumpnn_${num_controller}_${Dp}_${alphaq}_${Dr}_${Seed}.txt id c_cNN[*] x y vx vy
-#dump_modify     dNN sort id
+dump_modify     dNN sort id
 run             ${runtime_Main}
  
