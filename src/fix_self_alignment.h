@@ -6,40 +6,27 @@
 
 #ifdef FIX_CLASS
 
-FixStyle(robot_learning,FixRobotLearning)
+FixStyle(self_alignment,FixSelfAlignment)
 
 #else
 
-#ifndef LMP_FIX_ROBOT_LEARNING_H
-#define LMP_FIX_ROBOT_LEARNING_H
+#ifndef LMP_FIX__SELF_ALIGNMENT_H
+#define LMP_FIX__SELF_ALIGNMENT_H
 
 #include "fix.h"
 
 namespace LAMMPS_NS {
 
-class FixRobotLearning : public Fix {
+class FixSelfAlignment : public Fix {
  public:
-  FixRobotLearning(class LAMMPS *, int, char **);
-  ~FixRobotLearning();
+  FixSelfAlignment(class LAMMPS *, int, char **);
+  ~FixSelfAlignment();
   int setmask();
   void setup(int);
-  void init();
   void post_force(int);
 
  private:
- class RanMars *random;
- int seed;
- int Nn;
- double alphaq;
- double Dp;
- char* idregion0;
- class Region *region0;
- char* idregion1;
- class Region *region1;
- double alpha;
- double comm_radius;
- double dt;
-
+ double zetaa;
 };
 
 }

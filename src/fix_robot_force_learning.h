@@ -6,26 +6,27 @@
 
 #ifdef FIX_CLASS
 
-FixStyle(robot_force_learning2,FixRobotForceLearning2)
+FixStyle(robot_force_learning,FixRobotForceLearning)
 
 #else
 
-#ifndef LMP_FIX_ROBOT_FORCE_LEARNING_2_H
-#define LMP_FIX_ROBOT_FORCE_LEARNING_2_H
+#ifndef LMP_FIX_ROBOT_FORCE_LEARNING_H
+#define LMP_FIX_ROBOT_FORCE_LEARNING_H
 
 #include "fix.h"
-
+#include "neigh_request.h"
 
 namespace LAMMPS_NS {
 
-class FixRobotForceLearning2: public Fix {
+class FixRobotForceLearning : public Fix {
  public:
-  FixRobotForceLearning2(class LAMMPS *, int, char **);
-  ~FixRobotForceLearning2();
+  FixRobotForceLearning(class LAMMPS *, int, char **);
+  ~FixRobotForceLearning();
   int setmask();
   void setup(int);
   void init();
-  void post_force(int) override;
+  void init_list(int, class NeighList *)override;
+  void post_force(int)override;
 
  private:
  class RanMars *random;
@@ -41,6 +42,8 @@ class FixRobotForceLearning2: public Fix {
  double comm_radius;
  double dt;
  int numforce;
+ NeighList *list = nullptr;
+
 };
 
 }

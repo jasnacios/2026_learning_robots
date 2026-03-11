@@ -3416,8 +3416,8 @@ int Atom::extract_size(const char *name, int type)
       if (strcmp(name,"v") == 0) return 3;
       if (strcmp(name,"f") == 0) return 3;
       if (strcmp(name,"mu") == 0) return 4;
-      if (strcmp(name,"poidsnn") == 0) return 8;
-      if (strcmp(name,"dpoids") == 0) return 8;
+      if (strcmp(name,"poidsnn") == 0) return 200;
+      if (strcmp(name,"dpoids") == 0) return 200;
       if (strcmp(name,"omega") == 0) return 3;
       if (strcmp(name,"angmom") == 0) return 3;
       if (strcmp(name,"torque") == 0) return 3;
