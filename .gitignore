@@ -4,4 +4,5 @@ lammps_src/Obj_serial/
 lammps_src/lmp_mpi
 lammps_src/lmp_serial
 lammps_src/*.a
+lammps_src/lmpgitversion.h
 log*
