@@ -86,7 +86,7 @@ void FixIntegrationLearning::end_of_step()
         }
         for (int k=0;k<Nn;k++) {
           if(poidsnn[i][k] > 1.0) poidsnn[i][k] = 2 - poidsnn[i][k];
-          if(poidsnn[i][k] < 0.0) poidsnn[i][k] = - poidsnn[i][k];
+          if(poidsnn[i][k] < -1.0) poidsnn[i][k] = -2 - poidsnn[i][k];
         }
       }
     }

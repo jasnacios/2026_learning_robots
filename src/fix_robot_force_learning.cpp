@@ -124,7 +124,7 @@ void FixRobotForceLearning::post_force(int vflag)
         qreward[i] = 0.0;
         dreward[i] = 0.0;
         for (int k = 0; k < Nn; k++) {
-          poidsnn[i][k] = random->uniform();
+          poidsnn[i][k] = 2*(random->uniform() - 0.5);
           dw[i][k] = 0.0;
         }
     }

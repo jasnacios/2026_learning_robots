@@ -16,6 +16,8 @@
 
 #include "pointers.h"
 
+#define MAX_NEURONS 200
+
 #include <map>
 #include <set>
 
