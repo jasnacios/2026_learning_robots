@@ -43,7 +43,7 @@ AtomVecLearner::AtomVecLearner(LAMMPS *lmp) : AtomVec(lmp)
   fields_grow = { "poidsnn", "dpoids", "qreward", "dreward", "lightintensity", "clock"};
   
   fields_copy = { "poidsnn", "dpoids", "qreward", "dreward", "lightintensity", "clock"};
-  fields_comm = { "poidsnn", "dpoids", "qreward", "dreward", "lightintensity", "clock"};
+  fields_comm = { "qreward", "dreward", "lightintensity", "clock"};
   // fields_reverse = { "poidsnn", "qreward", "lightintensity"};
 
 
@@ -51,8 +51,8 @@ AtomVecLearner::AtomVecLearner(LAMMPS *lmp) : AtomVec(lmp)
   
   fields_restart = { "poidsnn", "dpoids", "qreward", "dreward", "lightintensity", "clock"};
  
- fields_data_atom = {"id", "type", "x"};
-fields_data_vel = {"id", "v"};
+  fields_data_atom = {"id", "type", "x"};
+  fields_data_vel = {"id", "v"};
 
   setup_fields();
 }

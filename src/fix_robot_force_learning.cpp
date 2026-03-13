@@ -197,26 +197,3 @@ void FixRobotForceLearning::post_force(int vflag)
     }  
   }
 }
-
-//if (numforce == 0){
-          //if (rsq < comm_radius_sq) {
-            //if (qreward[i] < qreward[j]-epsilon) {
-              //dreward[i] += alpha*(qreward[j] - qreward[i])*dt/jnum;
-              //for (int k = 0; k<Nn; k++) {
-                //dw[i][k] += alpha*(poidsnn[j][k] - poidsnn[i][k])*dt/jnum;
-              //}
-            //}
-          //}
-        //}
-        //else if (numforce == 1) {}
-//for (int i = 0; i < nlocal; i++) {
-      //if (mask[i] & groupbit) {
-        //for(int k=0;k<Nn;k++) {
-          //poidsnn[i][k] += dw[i][k] + random->gaussian() * sqrt(2*dt*Dp);
-        //}
-        //for (int k=0;k<Nn;k++) {
-         // if(poidsnn[i][k] > 1.0) poidsnn[i][k] = 2 - poidsnn[i][k];
-         // if(poidsnn[i][k] < 0.0) poidsnn[i][k] = - poidsnn[i][k];
-        //}
-      //}
-    //}
