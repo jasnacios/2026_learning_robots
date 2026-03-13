@@ -16,15 +16,12 @@
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
-
-bool valid_activation(const std::string &a)
+inline double act_motorlike(double x)
 {
-  return (
-    a == "relu" ||
-    a == "sigmoid" ||
-    a == "tanh" ||
-    a == "linear"
-  );
+  // Gompertz function approximating robot motor response for x in [-1, 1]
+  double y = std::exp(-0.35*std::exp(-4*x));
+  if (y < 0.01) return 0.0;
+  return y;
 }
 
 inline double act_relu(double x)
@@ -52,7 +49,19 @@ inline double apply_activation(const ActivationFunction& act, double x)
   if (act == RELU) return act_relu(x);
   if (act == SIGMOID) return act_sigmoid(x);
   if (act == TANH) return act_tanh(x);
+  if (act == MOTORLIKE) return act_motorlike(x);
   return act_linear(x);
+}
+
+const ActivationFunction FixMLP::get_activation_enum(const std::string &a)
+{
+  if (a == "relu") return RELU;
+  if (a == "sigmoid") return SIGMOID;
+  if (a == "tanh") return TANH;
+  if (a == "linear") return LINEAR;
+  if (a == "motorlike") return MOTORLIKE;
+  error->all(FLERR,"Fix MLP: invalid activation function " + a);
+  return LINEAR; // Unreachable, but silences compiler warning
 }
 
 /* ---------------------------------------------------------------------- */
@@ -75,20 +84,50 @@ FixMLP::FixMLP(LAMMPS *lmp, int narg, char **arg) :
     error->all(FLERR,"Fix MLP: nbNeuronsPerLayer must be >= 1");
 
   // Parse CSV vectors
-  _inputs = _split_csv(arg[5]);
-  _outputs = _split_csv(arg[6]);
-  _activationFunctions = _split_csv(arg[7]);
+  _inputs = _split_csv(arg[5], ';');
+  _outputs = _split_csv(arg[6], ';');
 
-  // Validate activation functions
-  for (const auto &a : _activationFunctions) {
-    if (!valid_activation(a))
-      error->all(FLERR,"Fix MLP: invalid activation function " + a);
-  }
+  std::vector<std::string> str_activations = _split_csv(arg[7], ';');
 
   // Activation count check
-  if (_activationFunctions.size() != _nbLayers)
+  if (str_activations.size() != _nbLayers)
     error->all(FLERR,
       "Fix MLP: number of activation functions must match nbLayers");
+
+  _activationFunctionsInternal.reserve(str_activations.size()-1);
+  for (size_t i = 0; i < str_activations.size() - 1; i++) {
+    const auto &a = str_activations[i];
+    _activationFunctionsInternal.push_back(get_activation_enum(a));
+  }
+
+  // ------------------------------
+  // Parse output activations
+  // ------------------------------
+
+  _activationFunctionsOutput.clear();
+  std::string last = str_activations.back();
+  bool bracketed = (!last.empty() && last.front() == '[' && last.back() == ']');
+
+  if (bracketed) {
+    // Remove brackets
+    std::string inside = last.substr(1, last.size() - 2);
+    std::vector<std::string> outActs = _split_csv(inside, ',');
+
+    if (outActs.size() != _outputs.size())
+      error->all(FLERR,
+        "Fix MLP: number of output activation functions must match number of outputs");
+
+    _activationFunctionsOutput.reserve(outActs.size());
+
+    for (const auto &a : outActs) {
+      _activationFunctionsOutput.push_back(get_activation_enum(a));
+    }
+
+  } else {
+    ActivationFunction f = get_activation_enum(last);
+    _activationFunctionsOutput.resize(_outputs.size(), f);
+  }
+
 
   // Basic sanity checks
   if (_inputs.empty())
@@ -100,7 +139,6 @@ FixMLP::FixMLP(LAMMPS *lmp, int narg, char **arg) :
   _buildViews();
 
   CheckWeightsFit();
-  _buildActivationFunctionEnums();
 }
 
 /* ---------------------------------------------------------------------- */
@@ -217,9 +255,9 @@ void FixMLP::MultiLayerPerceptron(const double* w, const int atomIndex) const
       sum += w[wpos++]; // bias
       
       if (layer == _nbLayers - 1)
-        _out[i].ptr[atomIndex * _out[i].stride] = apply_activation(_activationFunctionEnums[layer], sum);
+        _out[i].ptr[atomIndex * _out[i].stride] = apply_activation(_activationFunctionsOutput[i], sum);
       else
-        curr[i] = apply_activation(_activationFunctionEnums[layer], sum);
+        curr[i] = apply_activation(_activationFunctionsInternal[layer], sum);
     }
 
     prev = curr;
@@ -253,22 +291,13 @@ void FixMLP::CheckWeightsFit() const
     inputSize, outputSize, _nbLayers, _nbNeuronsPerLayer);
 }
 
-void FixMLP::_buildActivationFunctionEnums() {
-  for (const auto &a : _activationFunctions) {
-    if (a == "relu") _activationFunctionEnums.push_back(RELU);
-    else if (a == "sigmoid") _activationFunctionEnums.push_back(SIGMOID);
-    else if (a == "tanh") _activationFunctionEnums.push_back(TANH);
-    else if (a == "linear") _activationFunctionEnums.push_back(LINEAR);
-  }
-}
-
-std::vector<std::string> FixMLP::_split_csv(const std::string &s)
+std::vector<std::string> FixMLP::_split_csv(const std::string &s, char delimiter) const
 {
   std::vector<std::string> out;
   std::stringstream ss(s);
   std::string item;
 
-  while (std::getline(ss, item, ',')) {
+  while (std::getline(ss, item, delimiter)) {
     if (item.empty())
       error->all(FLERR,"Fix MLP: empty entry in CSV list");
     out.push_back(item);

@@ -17,6 +17,9 @@
 #include "neighbor.h"
 #include "memory.h"
 
+// Per-robot delay to prevent weight update by social interactions
+#define PROTECTION_WINDOW -1.0
+
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
@@ -109,6 +112,9 @@ void FixRobotForceLearning::post_force(int vflag)
   double *qreward = atom->qreward;
   double *lightintensity = atom->lightintensity;
 
+  double* clock = atom->clock;
+  double ts = update->ntimestep * dt;
+
   double **x = atom->x;
 
   int step = update->ntimestep;
@@ -147,6 +153,10 @@ void FixRobotForceLearning::post_force(int vflag)
       jlist = firstneigh[i];
       jnum = numneigh[i];
 
+      // In case of multiple neighbors, only learn from the one with the highest reward
+      // In a real experiment, this is what would happen anyway at the term of multiple
+      // exchanges, provided the duration of an exchange is very small compared to
+      // comm_radius / <v>
       double maxscore = 1e-8;
       int maxj = -1;
 
@@ -166,11 +176,12 @@ void FixRobotForceLearning::post_force(int vflag)
           }
         }
       }
-      if (maxj>=0 && qreward[i]<qreward[maxj]-epsilon) {
+      if (maxj>=0 && qreward[i]<qreward[maxj]-epsilon && clock[i] < ts - PROTECTION_WINDOW) {
         dreward[i] = alpha*(qreward[maxj] - qreward[i])*dt;
         for (int k = 0; k<Nn; k++) {
           dw[i][k] = alpha*(poidsnn[maxj][k] - poidsnn[i][k])*dt;
         }
+        clock[i] = ts;
     }
     }
 

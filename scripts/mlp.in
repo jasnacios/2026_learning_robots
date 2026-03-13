@@ -8,7 +8,7 @@
 # ------------------------------------------
 
 # set the random seed:
-variable Seed index 1000 1001 1002
+variable Seed index 1020
 
 # set the number of particles:
 variable    N equal 64
@@ -20,24 +20,18 @@ variable    c equal 9
 
 # set the time step, the total number of steps, and the frequency of dumping data:
 variable	dt equal 0.001
-variable    runtime_Main equal 4000000
+variable    runtime_Main equal 3000000
 variable    dump_freq equal 1000
 
-
-# set the controler: 
-variable    num_controller equal 8
-
 #set the "size" of the neural network: 
-
-# len(w)=hidden_size2+5⋅hidden_size+2
-variable    total_neurons equal 106
+variable    total_neurons equal 37
 
 # set the learning parameters: 
 variable    comm_radius equal 1.122
 
-variable    alphaq equal 0.1
-variable    alpha equal 1000.0
-variable    Dp index 0.1 0.01 0.001 0.0001
+variable    alphaq index 0.01
+variable    alpha equal 100.0
+variable    Dp index 0.0001
 
 # set the physical parameters related to friction and noise:
 variable    gamma_t equal 1.0
@@ -45,7 +39,7 @@ variable    gamma_r equal 1.0
 
 variable    Dt equal 0.0
 variable    Dr equal 0.1
-variable    zeta equal 0.0
+variable    zeta equal 0.0001
 
 # --------------------------------------------
 # DÉFINITION DES DIFFÉRENTES RÉGIONS: 
@@ -86,7 +80,7 @@ variable 	    runtime_Soft equal 50000
 pair_style      soft ${WCA_cut}
 pair_coeff      * * 0.0
 variable        prefactor equal ramp(0,100) # strength of soft potential is increase slowly over time
-create_atoms	1 random ${N} ${Seed} full_box # adding N particles randomly to the entire simulation box
+create_atoms	1 random ${N} ${Seed} init # adding N particles randomly to the entire simulation box
 set             type * diameter 1.0
 
 fix             1 all brownian 0.0001 ${Seed} gamma_t 1.0 #run a passive brownian to remove overlaps
@@ -97,7 +91,7 @@ unfix		    1
 unfix           2
 
 
-reset_timestep	0 
+reset_timestep	0
 
 # -----------------------------------------------------------------------------
 # MAIN RUN: ACTIVE BROWNIAN PARTICLES LEARNING TO PERFORM PHOTOTAXIS
@@ -110,7 +104,7 @@ pair_coeff	    * * 1.0 1.0 ${WCA_cut}  #Cutoff LJ at minima to become WCA
 
 
 fix              1 all robot_force_learning ${alphaq} ${Dp} light light ${comm_radius} ${alpha} ${total_neurons} ${Seed} 0
-fix              2 all multiLayerPerceptron 2 16 lightintensity Fa,ztorque linear,tanh 100
+fix              2 all multiLayerPerceptron 2 12 lightintensity Fa;ztorque linear;[motorlike,tanh] 500
 fix              3 all self_alignment ${zeta}
 fix              4 all SelfBrownian2D ${gamma_t} ${gamma_r} ${Dt} ${Dr} ${Seed}
 fix              5 all IntegrationLearning ${Dp} ${total_neurons} ${Seed}
@@ -118,14 +112,9 @@ fix              5 all IntegrationLearning ${Dp} ${total_neurons} ${Seed}
 
 compute         cNN all poidsnn/atom ${total_neurons}
 
-dump            dNN all custom ${dump_freq} dumpnn_${num_controller}_${Dp}_${alphaq}_${Dr}_${Seed}.txt id c_cNN[*] x y vx vy qreward
+dump            dNN all custom ${dump_freq} dumpnnOutOfLight_${Dp}_${alphaq}_${Dr}_${Seed}.cfg id c_cNN[*] x y vx vy qreward
 #dump_modify     dNN sort id
 run             ${runtime_Main}
- 
-clear
-next Dp
-jump mlp.in
-
 
 clear
 next Seed

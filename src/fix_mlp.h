@@ -27,7 +27,8 @@ enum ActivationFunction {
     RELU,
     SIGMOID,
     TANH,
-    LINEAR
+    LINEAR,
+    MOTORLIKE
 };
 
 class FixMLP : public Fix {
@@ -40,10 +41,11 @@ class FixMLP : public Fix {
   void MultiLayerPerceptron(const double* w, const int atomIndex) const;
   void CheckWeightsFit() const;
 
+  const ActivationFunction get_activation_enum(const std::string &a);
+
  private:
   unsigned int _nbLayers;
   unsigned int _nbNeuronsPerLayer;
-  std::vector<std::string> _activationFunctions;
   std::vector<std::string> _outputs;
   std::vector<std::string> _inputs;
 
@@ -51,10 +53,10 @@ class FixMLP : public Fix {
   // from the requested properties as string and use them in the MLP
   std::vector<LAMMPS_NS::FlatView> _features;
   std::vector<LAMMPS_NS::FlatView> _out;
-  std::vector<ActivationFunction> _activationFunctionEnums;
+  std::vector<ActivationFunction> _activationFunctionsInternal;
+  std::vector<ActivationFunction> _activationFunctionsOutput;
   void _buildViews();
-  void _buildActivationFunctionEnums();
-  std::vector<std::string> _split_csv(const std::string &s);
+  std::vector<std::string> _split_csv(const std::string &s, char delimiter) const;
 
   int _nevery;
 };
