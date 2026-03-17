@@ -44,12 +44,18 @@ inline double act_linear(double x)
   return x;
 }
 
+inline double act_heaviside(double x)
+{
+  return x >0 ? 1.0 : -1.0;
+}
+
 inline double apply_activation(const ActivationFunction& act, double x)
 {
   if (act == RELU) return act_relu(x);
   if (act == SIGMOID) return act_sigmoid(x);
   if (act == TANH) return act_tanh(x);
   if (act == MOTORLIKE) return act_motorlike(x);
+  if (act == HEAVISIDE) return act_heaviside(x);
   return act_linear(x);
 }
 
@@ -60,6 +66,7 @@ const ActivationFunction FixMLP::get_activation_enum(const std::string &a)
   if (a == "tanh") return TANH;
   if (a == "linear") return LINEAR;
   if (a == "motorlike") return MOTORLIKE;
+  if (a == "heaviside") return HEAVISIDE;
   error->all(FLERR,"Fix MLP: invalid activation function " + a);
   return LINEAR; // Unreachable, but silences compiler warning
 }

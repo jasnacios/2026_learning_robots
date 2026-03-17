@@ -28,7 +28,8 @@ enum ActivationFunction {
     SIGMOID,
     TANH,
     LINEAR,
-    MOTORLIKE
+    MOTORLIKE,
+    HEAVISIDE
 };
 
 class FixMLP : public Fix {
