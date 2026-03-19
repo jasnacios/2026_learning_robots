@@ -83,10 +83,8 @@ void FixRobotLearning::post_force(int vflag)
   int *ilist, *jlist, *numneigh, **firstneigh;
 
   double **poidsnn = atom->poidsnn;
-  double **dpoids = atom->dpoids;
   double *ztorque = atom->ztorque;
   double *qreward = atom->qreward;
-  double *dreward = atom->dreward;
   double *lightintensity = atom->lightintensity;
 
   double **x = atom->x;
@@ -108,18 +106,10 @@ void FixRobotLearning::post_force(int vflag)
   if (step < 1) {
     for (int i = 0; i < nlocal; i++) {
     qreward[i] = 0.0;
-    dreward[i] = 0.0;
     for (int k = 0; k < Nn; k++){
-      poidsnn[i][k] = random->uniform();
-      dpoids[i][k] = 0.0;}}
+      poidsnn[i][k] = random->uniform();}}
   }
   if (step >= 1) {
-    for(int i = 0; i < nlocal; i++) {
-      dreward[i] = 0.0;
-      for (int k = 0; k < Nn; k++){
-        dpoids[i][k] = 0.0;
-      }
-    }
     for (ii = 0; ii < inum; ii++) {
       i = ilist[ii];
       xtmp = x[i][0];
@@ -141,15 +131,15 @@ void FixRobotLearning::post_force(int vflag)
         if(rsq == 0) continue;
         if (rsq < comm_radius_sq) {
           if (qreward[i] > qreward[j]+epsilon) {
-              dreward[j] += alpha*(qreward[i] - qreward[j])*dt/jnum;
+              qreward[j] += alpha*(qreward[i] - qreward[j])*dt;
               for (int k = 0; k<Nn; k++) {
-                dpoids[j][k] += alpha*(poidsnn[i][k] - poidsnn[j][k])*dt/jnum;
+                poidsnn[j][k] += alpha*(poidsnn[i][k] - poidsnn[j][k])*dt;
               }
             }
           if (qreward[i] < qreward[j]-epsilon) {
-              dreward[i] += alpha*(qreward[j] - qreward[i])*dt/jnum;
+              qreward[i] += alpha*(qreward[j] - qreward[i])*dt/jnum;
               for (int k = 0; k<Nn; k++) {
-                dpoids[i][k] += alpha*(poidsnn[j][k] - poidsnn[i][k])*dt/jnum;
+                poidsnn[i][k] += alpha*(poidsnn[j][k] - poidsnn[i][k])*dt/jnum;
               }
             }
           }
@@ -158,7 +148,7 @@ void FixRobotLearning::post_force(int vflag)
     for (int i = 0; i < nlocal; i++) {
       if (mask[i] & groupbit) {
         for(int k=0;k<Nn;k++) {
-          poidsnn[i][k] += dpoids[i][k] + random->gaussian() * sqrt(2*dt*Dp);
+          poidsnn[i][k] +=  random->gaussian() * sqrt(2*dt*Dp);
         }
         for (int k=0;k<Nn;k++) {
           if(poidsnn[i][k] > 1.0) poidsnn[i][k] = 2 - poidsnn[i][k];
@@ -174,7 +164,7 @@ void FixRobotLearning::post_force(int vflag)
           lightintensity[i] = 0.1;
         } 
         // Update reward
-        qreward[i] += dreward[i] +alphaq*(lightintensity[i] - qreward[i]) *dt;
+        qreward[i] += alphaq*(lightintensity[i] - qreward[i]) *dt;
       }
     }  
   }

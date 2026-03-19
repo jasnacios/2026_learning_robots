@@ -31,7 +31,9 @@ AtomVecLearner::AtomVecLearner(LAMMPS *lmp) : AtomVec(lmp)
   atom->poidsnn_flag = 1;
   atom->lightintensity_flag = 1;
   atom->qreward_flag = 1;
-
+  atom->dpoids_flag = 1;
+  atom->dreward_flag = 1;
+  
   // strings with peratom variables to include in each AtomVec method
   // strings cannot contain fields in corresponding AtomVec default strings
   // order of fields in a string does not matter
@@ -42,16 +44,15 @@ AtomVecLearner::AtomVecLearner(LAMMPS *lmp) : AtomVec(lmp)
   fields_grow = { "poidsnn", "dpoids", "qreward", "dreward", "lightintensity"};
   
   fields_copy = { "poidsnn", "dpoids", "qreward", "dreward", "lightintensity"};
-  fields_comm = { "poidsnn", "dpoids", "qreward", "dreward", "lightintensity"};
+  fields_comm = { "poidsnn", "qreward"};
   // fields_reverse = { "poidsnn", "qreward", "lightintensity"};
 
 
-  fields_border = { "poidsnn", "dpoids", "qreward","dreward", "lightintensity"};
-  
+  fields_border = { "poidsnn", "qreward", "lightintensity"};
   fields_restart = { "poidsnn", "dpoids", "qreward", "dreward", "lightintensity"};
  
  fields_data_atom = {"id", "type", "x"};
-fields_data_vel = {"id", "v"};
+ fields_data_vel = {"id", "v"};
 
   setup_fields();
 }

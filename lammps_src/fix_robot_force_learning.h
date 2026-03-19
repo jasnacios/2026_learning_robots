@@ -42,6 +42,8 @@ class FixRobotForceLearning : public Fix {
  double comm_radius;
  double dt;
  int numforce;
+ double ilow;
+ double ihigh;
  NeighList *list = nullptr;
 
 };

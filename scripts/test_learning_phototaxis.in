@@ -8,19 +8,19 @@
 # ------------------------------------------
 
 # set the random seed:
-variable Seed index 444444#25389
+variable Seed index 7777777
 
 # set the number of particles:
-variable    N equal 100
+variable    N equal 10000
 
 # Set the size of the bos, and light diameter: 
-variable    L equal 17.3
-variable    l equal 4.7
+variable    L equal 172.5
+variable    l equal 47
 variable    c equal 9
 
 # set the time step, the total number of steps, and the frequency of dumping data:
 variable	dt equal 0.001
-variable    runtime_Main equal 1000000
+variable    runtime_Main equal 180000 #00
 variable    dump_freq equal 10000
 
 
@@ -34,9 +34,9 @@ variable    h equal 0 # in case of MLP, sets the thickness of the hidden layer
 # set the learning parameters: 
 variable    comm_radius equal 1.122
 
-variable    alphaq equal 0.03
-variable    alpha equal 1000.0
-variable    Dp equal 1e-05 
+variable    alphaq equal 0.005
+variable    alpha equal 1000
+variable    Dp equal 1e-06 
 
 # set the physical parameters related to friction and noise:
 variable    gamma_t equal 1.0
@@ -110,13 +110,13 @@ pair_modify	    shift yes #shifts LJ to become WCA
 pair_coeff	    * * 1.0 1.0 ${WCA_cut}  #Cutoff LJ at minima to become WCA
 
 
-fix              1 all robot_force_learning2 ${alphaq} ${Dp} light light ${comm_radius} ${alpha} ${Nn} ${Seed} 0
+fix              1 all robot_force_learning ${alphaq} ${Dp} light light ${comm_radius} ${alpha} ${Nn} ${Seed} 1
 fix              2 all controler ${num_controller} ${Nn} ${h}
 fix              3 all self_alignment ${zeta}
 fix              4 all SelfBrownian2D ${gamma_t} ${gamma_r} ${Dt} ${Dr} ${Seed}
 fix              5 all IntegrationLearning ${Dp} ${Nn} ${Seed}
 
-#fix             1 all robot_learning ${alphaq} ${Dp} light light ${comm_radius} ${alpha} ${Nn} ${Seed} 0 
+#fix             1 all robot_learning ${alphaq} ${Dp} light light ${comm_radius} ${alpha} ${Nn} ${Seed} 1 
 #fix             2 all controler ${num_controller} ${Nn} ${h}
 #fix             3 all self_alignment ${zeta}
 #fix             4 all SelfBrownian2D ${gamma_t} ${gamma_r} ${Dt} ${Dr} ${Seed}
