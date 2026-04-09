@@ -25,24 +25,23 @@ using namespace FixConst;
 FixRobotForceLearning::FixRobotForceLearning(LAMMPS *lmp, int narg, char **arg) :
 Fix(lmp, narg, arg)
 {
-  if (narg < 14) error->all(FLERR,"Illegal fix robot_force_learning command");
+  if (narg < 13) error->all(FLERR,"Illegal fix robot_force_learning command");
   
  
   alphaq = utils::numeric(FLERR,arg[3],false,lmp);
-  Dp = utils::numeric(FLERR,arg[4],false,lmp);
-  idregion0 = utils::strdup(arg[5]);
-  region0 = domain->get_region_by_id(arg[5]);
-  idregion1 = utils::strdup(arg[6]);
-  region1 = domain->get_region_by_id(arg[6]);
-  comm_radius = utils::numeric(FLERR,arg[7],false,lmp);
-  alpha = utils::numeric(FLERR,arg[8],false,lmp);
-  Nn = utils::numeric(FLERR,arg[9],false,lmp);
-  seed = utils::numeric(FLERR,arg[10],false,lmp);
-  numforce = utils::numeric(FLERR,arg[11],false,lmp);
-  ilow = utils::numeric(FLERR,arg[12],false,lmp);
-  ihigh = utils::numeric(FLERR,arg[13],false,lmp);
+  idregion0 = utils::strdup(arg[4]);
+  idregion1 = utils::strdup(arg[5]);
+  comm_radius = utils::numeric(FLERR,arg[6],false,lmp);
+  communication = utils::numeric(FLERR,arg[7],false,lmp);
+  Nn = utils::numeric(FLERR,arg[8],false,lmp);
+  seed = utils::numeric(FLERR,arg[9],false,lmp);
+  numforce = utils::numeric(FLERR,arg[10],false,lmp);
+  ilow = utils::numeric(FLERR,arg[11],false,lmp);
+  ihigh = utils::numeric(FLERR,arg[12],false,lmp);
   
   random = new RanMars(lmp, seed + comm->me);
+  region0 = domain->get_region_by_id(arg[4]);
+  region1 = domain->get_region_by_id(arg[5]);
 
 }
 
@@ -126,10 +125,15 @@ void FixRobotForceLearning::post_force(int vflag)
     for (int i = 0; i < nlocal; i++) {
         qreward[i] = 0.0;
         dreward[i] = 0.0;
-        for (int k = 0; k < Nn; k++) {
-          poidsnn[i][k] = random->uniform();
-          dw[i][k] = 0.0;
-        }
+        poidsnn[i][0] = 1.0;
+        poidsnn[i][1] = 1.0;
+        poidsnn[i][2] = 0.5;
+        poidsnn[i][3] = 0.25;
+        
+        //for (int k = 0; k < Nn; k++) {
+          //poidsnn[i][k] = random->uniform();
+          //dw[i][k] = 0.0;
+        //}
     }
   }
   if (step >= 1) {
@@ -140,67 +144,69 @@ void FixRobotForceLearning::post_force(int vflag)
         dw[i][k] = 0.0;
       }
     }
-    if (numforce ==0){
-      for (ii = 0; ii < inum; ii++) {
-        i = ilist[ii];
-        xtmp = x[i][0];
-        ytmp = x[i][1];
-        ztmp = x[i][2];
-          
-        jlist = firstneigh[i];
-        jnum = numneigh[i];
+    if (communication ==1){
+      if (numforce == 0){
+        for (ii = 0; ii < inum; ii++) {
+          i = ilist[ii];
+          xtmp = x[i][0];
+          ytmp = x[i][1];
+          ztmp = x[i][2];
+            
+          jlist = firstneigh[i];
+          jnum = numneigh[i];
 
-        double maxscore = 1e-8;
-        int maxj = -1;
+          double maxscore = 1e-8;
+          int maxj = -1;
 
-        for (jj = 0; jj < jnum; jj++) {
-          j = jlist[jj];
-          j &= NEIGHMASK;
-      
-          delx = xtmp - x[j][0];
-          dely = ytmp - x[j][1];
-          delz = ztmp - x[j][2];
-          rsq = delx * delx + dely * dely + delz * delz;
-          
-          if (rsq <= comm_radius_sq) {
-            if (qreward[j] > maxscore) {
-              maxscore = qreward[j];
-              maxj = j;
+          for (jj = 0; jj < jnum; jj++) {
+            j = jlist[jj];
+            j &= NEIGHMASK;
+        
+            delx = xtmp - x[j][0];
+            dely = ytmp - x[j][1];
+            delz = ztmp - x[j][2];
+            rsq = delx * delx + dely * dely + delz * delz;
+            
+            if (rsq <= comm_radius_sq) {
+              if (qreward[j] > maxscore) {
+                maxscore = qreward[j];
+                maxj = j;
+              }
+            }
+          }
+          if (maxj>=0 && qreward[i]<qreward[maxj]-epsilon) {
+            dreward[i] = qreward[maxj] - qreward[i]; // alpha*(qreward[maxj] - qreward[i])*dt;
+            for (int k = 0; k<Nn; k++) {
+              dw[i][k] = poidsnn[maxj][k] - poidsnn[i][k];// alpha*(poidsnn[maxj][k] - poidsnn[i][k])*dt;
             }
           }
         }
-        if (maxj>=0 && qreward[i]<qreward[maxj]-epsilon) {
-          dreward[i] = qreward[maxj] - qreward[i]; // alpha*(qreward[maxj] - qreward[i])*dt;
-          for (int k = 0; k<Nn; k++) {
-            dw[i][k] = poidsnn[maxj][k] - poidsnn[i][k];// alpha*(poidsnn[maxj][k] - poidsnn[i][k])*dt;
-          }
-        }
       }
-    }
-    else if (numforce ==1){
-      for (ii = 0; ii < inum; ii++) {
-        i = ilist[ii];
-        xtmp = x[i][0];
-        ytmp = x[i][1];
-        ztmp = x[i][2];
-          
-        jlist = firstneigh[i];
-        jnum = numneigh[i];
+      else if (numforce ==1){
+        for (ii = 0; ii < inum; ii++) {
+          i = ilist[ii];
+          xtmp = x[i][0];
+          ytmp = x[i][1];
+          ztmp = x[i][2];
+            
+          jlist = firstneigh[i];
+          jnum = numneigh[i];
 
-        for (jj = 0; jj < jnum; jj++) {
-          j = jlist[jj];
-          j &= NEIGHMASK;
-      
-          delx = xtmp - x[j][0];
-          dely = ytmp - x[j][1];
-          delz = ztmp - x[j][2];
-          rsq = delx * delx + dely * dely + delz * delz;
-          
-          if (rsq <= comm_radius_sq) {
-            if (qreward[i] < qreward[j]-epsilon) {
-              dreward[i] += alpha*(qreward[j] - qreward[i])*dt/jnum;
-              for (int k = 0; k<Nn; k++) {
-                dw[i][k] += alpha*(poidsnn[j][k] - poidsnn[i][k])*dt/jnum;
+          for (jj = 0; jj < jnum; jj++) {
+            j = jlist[jj];
+            j &= NEIGHMASK;
+        
+            delx = xtmp - x[j][0];
+            dely = ytmp - x[j][1];
+            delz = ztmp - x[j][2];
+            rsq = delx * delx + dely * dely + delz * delz;
+            
+            if (rsq <= comm_radius_sq) {
+              if (qreward[i] < qreward[j]-epsilon) {
+                dreward[i] +=(qreward[j] - qreward[i])/jnum;
+                for (int k = 0; k<Nn; k++) {
+                  dw[i][k] += (poidsnn[j][k] - poidsnn[i][k])/jnum;
+                }
               }
             }
           }

@@ -33,17 +33,17 @@ class FixRobotForceLearning : public Fix {
  int seed;
  int Nn;
  double alphaq;
- double Dp;
+
  char* idregion0;
  class Region *region0;
  char* idregion1;
  class Region *region1;
- double alpha;
  double comm_radius;
  double dt;
  int numforce;
  double ilow;
  double ihigh;
+ int communication;
  NeighList *list = nullptr;
 
 };

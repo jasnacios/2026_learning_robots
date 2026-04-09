@@ -51,7 +51,7 @@ AtomVecLearner::AtomVecLearner(LAMMPS *lmp) : AtomVec(lmp)
   fields_border = { "poidsnn", "qreward", "lightintensity"};
   fields_restart = { "poidsnn", "dpoids", "qreward", "dreward", "lightintensity"};
  
- fields_data_atom = {"id", "type", "x"};
+ fields_data_atom = {"id", "type", "x", "qreward", "poidsnn"};
  fields_data_vel = {"id", "v"};
 
   setup_fields();
