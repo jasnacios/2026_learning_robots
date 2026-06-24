@@ -81,13 +81,27 @@ void FixControler::post_force(int vflag)
     
 // Controler du stage: Vitesse déja fixé: seul le seuil est à apprendre
     if (nc ==0) {
-    if (mask[i] & groupbit) 
-        if (I >= w[0]) {
-          Fa[i] = 0.0;
-        } else {
-          Fa[i] = 1.0;
-        }
+    if (mask[i] & groupbit){
+      double vmin = 0.1; // 0.05;
+      double vmax = 1.9; // 1.0;
+      double k = 10*(2*w[0] - 1);
+      if (1.0 - k*I> vmax){Fa[i] = vmax;}
+      else if (1.0 - k*I < vmin){Fa[i] = vmin;}
+      else {Fa[i] = 1.0 - k*I;}
+        //if (I >= w[0]) {
+          //Fa[i] = 0.0;
+        //} else {
+          //Fa[i] = 1.0;
+        //}
       }
+    }
+
+    if (nc ==10) {
+    if (mask[i] & groupbit){
+      Fa[i] = 1.2 - std::exp(-(I-w[0])*(I-w[0])/0.01);
+      }
+    }
+
     if (nc ==1) {
     if (mask[i] & groupbit) 
         if (I >= w[0]) {

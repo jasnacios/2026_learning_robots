@@ -92,25 +92,3 @@ void FixIntegrationLearning::end_of_step()
     }
   }
 }
-//if (poidsnn[i][k] <r0) {
-  //          double inv = 1.0/ (poidsnn[i][k]+ epsilon);
-    //        double inv7 = inv*inv*inv*inv*inv*inv*inv;
-      //      dpoids[i][k] += 6*inv7*dt;
-        //    poidsnn[i][k] += dpoids[i][k] + random->gaussian() * sqrt(2*dt*Dp);
-          //}
-          //if (poidsnn[i][k] > 1.0 - r0){
-          // double inv = 1.0/ (1.0 - poidsnn[i][k]+ epsilon);
-          //  double inv7 = inv*inv*inv*inv*inv*inv*inv;
-          //  dpoids[i][k] -= 6*inv7*dt;
-          //  poidsnn[i][k] += dpoids[i][k] + random->gaussian() * sqrt(2*dt*Dp);
-          //}
-          //else {
-          //  poidsnn[i][k] += dpoids[i][k] + random->gaussian() * sqrt(2*dt*Dp);
-          //}
-        //}
-        //for (int k=0;k<Nn;k++) {
-          //if(poidsnn[i][k] > 1.0) poidsnn[i][k] = 2 - poidsnn[i][k];
-          //if(poidsnn[i][k] < 0.0) poidsnn[i][k] = - poidsnn[i][k];
-        //}
-      //}
-    //}

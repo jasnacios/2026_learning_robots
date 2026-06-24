@@ -25,7 +25,7 @@ using namespace FixConst;
 FixRobotForceLearning::FixRobotForceLearning(LAMMPS *lmp, int narg, char **arg) :
 Fix(lmp, narg, arg)
 {
-  if (narg < 13) error->all(FLERR,"Illegal fix robot_force_learning command");
+  if (narg < 14) error->all(FLERR,"Illegal fix robot_force_learning command");
   
  
   alphaq = utils::numeric(FLERR,arg[3],false,lmp);
@@ -38,7 +38,8 @@ Fix(lmp, narg, arg)
   numforce = utils::numeric(FLERR,arg[10],false,lmp);
   ilow = utils::numeric(FLERR,arg[11],false,lmp);
   ihigh = utils::numeric(FLERR,arg[12],false,lmp);
-  
+  alpha_T = utils::numeric(FLERR,arg[13],false,lmp);
+
   random = new RanMars(lmp, seed + comm->me);
   region0 = domain->get_region_by_id(arg[4]);
   region1 = domain->get_region_by_id(arg[5]);
@@ -93,7 +94,6 @@ void FixRobotForceLearning::setup(int vflag)
 void FixRobotForceLearning::post_force(int vflag)
 {
 
-  //this->list; 
   int i, j, ii, jj, inum, jnum;
   double xtmp, ytmp, ztmp, delx, dely, delz;
   double rsq;
@@ -121,19 +121,16 @@ void FixRobotForceLearning::post_force(int vflag)
 
   const double epsilon = 1.0e-10;
   const double comm_radius_sq = comm_radius * comm_radius;
+  
   if (step<1){
     for (int i = 0; i < nlocal; i++) {
         qreward[i] = 0.0;
         dreward[i] = 0.0;
-        poidsnn[i][0] = 1.0;
-        poidsnn[i][1] = 1.0;
-        poidsnn[i][2] = 0.5;
-        poidsnn[i][3] = 0.25;
         
-        //for (int k = 0; k < Nn; k++) {
-          //poidsnn[i][k] = random->uniform();
-          //dw[i][k] = 0.0;
-        //}
+        for (int k = 0; k < Nn; k++) {
+          poidsnn[i][k] = random->uniform();
+          dw[i][k] = 0.0;
+        }
     }
   }
   if (step >= 1) {
@@ -144,9 +141,13 @@ void FixRobotForceLearning::post_force(int vflag)
         dw[i][k] = 0.0;
       }
     }
-    if (communication ==1){
-      if (numforce == 0){
+
+    if (communication ==1){  // Communication 1: échange de poids et de score entre agents
+
+      if (numforce == 1){
+
         for (ii = 0; ii < inum; ii++) {
+          
           i = ilist[ii];
           xtmp = x[i][0];
           ytmp = x[i][1];
@@ -155,35 +156,52 @@ void FixRobotForceLearning::post_force(int vflag)
           jlist = firstneigh[i];
           jnum = numneigh[i];
 
-          double maxscore = 1e-8;
-          int maxj = -1;
+          double min_dist = 100;
+          int ppv = -1;
+          std::vector<int> pareilquei;
 
-          for (jj = 0; jj < jnum; jj++) {
-            j = jlist[jj];
-            j &= NEIGHMASK;
-        
-            delx = xtmp - x[j][0];
-            dely = ytmp - x[j][1];
-            delz = ztmp - x[j][2];
-            rsq = delx * delx + dely * dely + delz * delz;
-            
-            if (rsq <= comm_radius_sq) {
-              if (qreward[j] > maxscore) {
-                maxscore = qreward[j];
-                maxj = j;
+          if (random -> uniform() < alpha_T) {
+
+            for (jj = 0; jj < jnum; jj++) {
+              j = jlist[jj];
+              j &= NEIGHMASK;
+          
+              delx = xtmp - x[j][0];
+              dely = ytmp - x[j][1];
+              delz = ztmp - x[j][2];
+              rsq = delx * delx + dely * dely + delz * delz;
+              
+              if (rsq <= comm_radius_sq) {
+                if (rsq< min_dist)  {
+                  min_dist = rsq;
+                  ppv = j;
+                }
               }
             }
-          }
-          if (maxj>=0 && qreward[i]<qreward[maxj]-epsilon) {
-            dreward[i] = qreward[maxj] - qreward[i]; // alpha*(qreward[maxj] - qreward[i])*dt;
-            for (int k = 0; k<Nn; k++) {
-              dw[i][k] = poidsnn[maxj][k] - poidsnn[i][k];// alpha*(poidsnn[maxj][k] - poidsnn[i][k])*dt;
+            if (ppv>=0 && qreward[i]<qreward[ppv]-epsilon) {
+
+              dreward[i] = qreward[ppv] - qreward[i];
+              for (int k = 0; k<Nn; k++) {
+                dw[i][k] = poidsnn[ppv][k] - poidsnn[i][k]; 
+              }
+
+            }
+            else if (ppv>=0 && fabs(qreward[ppv] - qreward[i]) <= epsilon) {
+
+              if (random->uniform() < 0.5) {
+                dreward[i] = qreward[ppv] - qreward[i];
+                for (int k = 0; k<Nn; k++) {
+                  dw[i][k] = poidsnn[ppv][k] - poidsnn[i][k]; 
+                }
+              }
             }
           }
         }
       }
-      else if (numforce ==1){
+      else if (numforce == 3){
+
         for (ii = 0; ii < inum; ii++) {
+          
           i = ilist[ii];
           xtmp = x[i][0];
           ytmp = x[i][1];
@@ -192,21 +210,32 @@ void FixRobotForceLearning::post_force(int vflag)
           jlist = firstneigh[i];
           jnum = numneigh[i];
 
-          for (jj = 0; jj < jnum; jj++) {
-            j = jlist[jj];
-            j &= NEIGHMASK;
-        
-            delx = xtmp - x[j][0];
-            dely = ytmp - x[j][1];
-            delz = ztmp - x[j][2];
-            rsq = delx * delx + dely * dely + delz * delz;
-            
-            if (rsq <= comm_radius_sq) {
-              if (qreward[i] < qreward[j]-epsilon) {
-                dreward[i] +=(qreward[j] - qreward[i])/jnum;
-                for (int k = 0; k<Nn; k++) {
-                  dw[i][k] += (poidsnn[j][k] - poidsnn[i][k])/jnum;
+          double min_dist = 100;
+          int ppv = -1;
+          std::vector<int> pareilquei;
+
+          if (random -> uniform() < alpha_T) {
+            for (jj = 0; jj < jnum; jj++) {
+              j = jlist[jj];
+              j &= NEIGHMASK;
+          
+              delx = xtmp - x[j][0];
+              dely = ytmp - x[j][1];
+              delz = ztmp - x[j][2];
+              rsq = delx * delx + dely * dely + delz * delz;
+              
+              if (rsq <= comm_radius_sq) {
+                if (rsq< min_dist)  {
+                  min_dist = rsq;
+                  ppv = j;
                 }
+              }
+            }
+            if (ppv>=0 && qreward[i]<qreward[ppv]-epsilon) {
+
+              dreward[i] = qreward[ppv] - qreward[i]; // alpha*(qreward[ppv] - qreward[i])*dt;
+              for (int k = 0; k<Nn; k++) {
+                dw[i][k] = poidsnn[ppv][k] - poidsnn[i][k];// alpha*(poidsnn[ppv][k] - poidsnn[i][k])*dt;
               }
             }
           }
@@ -228,25 +257,110 @@ void FixRobotForceLearning::post_force(int vflag)
   }
 }
 
-//if (numforce == 0){
-          //if (rsq < comm_radius_sq) {
-            //if (qreward[i] < qreward[j]-epsilon) {
-              //dreward[i] += alpha*(qreward[j] - qreward[i])*dt/jnum;
-              //for (int k = 0; k<Nn; k++) {
-                //dw[i][k] += alpha*(poidsnn[j][k] - poidsnn[i][k])*dt/jnum;
-              //}
-            //}
-          //}
-        //}
-        //else if (numforce == 1) {}
-//for (int i = 0; i < nlocal; i++) {
-      //if (mask[i] & groupbit) {
-        //for(int k=0;k<Nn;k++) {
-          //poidsnn[i][k] += dw[i][k] + random->gaussian() * sqrt(2*dt*Dp);
-        //}
-        //for (int k=0;k<Nn;k++) {
-         // if(poidsnn[i][k] > 1.0) poidsnn[i][k] = 2 - poidsnn[i][k];
-         // if(poidsnn[i][k] < 0.0) poidsnn[i][k] = - poidsnn[i][k];
-        //}
-      //}
-    //}
+
+/* if (numforce == 0){    // numforce 0: copie le meilleur ou un random parmi les voisins qui ont un score similaire
+        for (ii = 0; ii < inum; ii++) {
+          
+          i = ilist[ii];
+          xtmp = x[i][0];
+          ytmp = x[i][1];
+          ztmp = x[i][2];
+            
+          jlist = firstneigh[i];
+          jnum = numneigh[i];
+
+          double maxscore = -2.0;
+          int maxj = -1;
+          std::vector<int> pareilquei;
+
+
+          for (jj = 0; jj < jnum; jj++) {
+            j = jlist[jj];
+            j &= NEIGHMASK;
+        
+            delx = xtmp - x[j][0];
+            dely = ytmp - x[j][1];
+            delz = ztmp - x[j][2];
+            rsq = delx * delx + dely * dely + delz * delz;
+            
+            if (rsq <= comm_radius_sq) {
+              if (qreward[j] > maxscore) {
+                maxscore = qreward[j];
+                maxj = j;
+              }
+              if (qreward[j]<= qreward[i]+epsilon && qreward[j]>= qreward[i] - epsilon){
+                pareilquei.push_back(j);
+              }
+              
+            }
+          }
+          if (maxj>=0 && qreward[i]<qreward[maxj]-epsilon) {
+
+            dreward[i] = qreward[maxj] - qreward[i];
+            
+            for (int k = 0; k<Nn; k++) {
+              dw[i][k] = poidsnn[maxj][k] - poidsnn[i][k];
+            }
+          }
+          else if (maxj>=0 && fabs(qreward[maxj] - qreward[i]) <= epsilon) {
+
+            if (random->uniform() < 0.5) {
+
+              int semblable_size  =  pareilquei.size();
+              int idx = (int)(random->uniform() * semblable_size);
+              int chosen_j = pareilquei[idx];
+
+              dreward[i] = qreward[chosen_j] - qreward[i]; 
+              
+              for (int k = 0; k<Nn; k++) {
+                dw[i][k] = poidsnn[chosen_j][k] - poidsnn[i][k]; 
+              }
+            }
+          }
+        }
+      }
+
+      else if (numforce == 2){
+        for (ii = 0; ii < inum; ii++) {
+          
+          i = ilist[ii];
+          xtmp = x[i][0];
+          ytmp = x[i][1];
+          ztmp = x[i][2];
+            
+          jlist = firstneigh[i];
+          jnum = numneigh[i];
+
+          double maxscore = -2.0;
+          int maxj = -1;
+          std::vector<int> pareilquei;
+
+
+          for (jj = 0; jj < jnum; jj++) {
+            j = jlist[jj];
+            j &= NEIGHMASK;
+        
+            delx = xtmp - x[j][0];
+            dely = ytmp - x[j][1];
+            delz = ztmp - x[j][2];
+            rsq = delx * delx + dely * dely + delz * delz;
+            
+            if (rsq <= comm_radius_sq) {
+              if (qreward[j] > maxscore) {
+                maxscore = qreward[j];
+                maxj = j;
+              }
+            }
+          }
+          if (maxj>=0 && qreward[i]<qreward[maxj]-epsilon) {
+
+            dreward[i] = qreward[maxj] - qreward[i]; // alpha*(qreward[maxj] - qreward[i])*dt;
+            
+            for (int k = 0; k<Nn; k++) {
+              dw[i][k] = poidsnn[maxj][k] - poidsnn[i][k];// alpha*(poidsnn[maxj][k] - poidsnn[i][k])*dt;
+            }
+          }
+        }
+      }
+
+*/

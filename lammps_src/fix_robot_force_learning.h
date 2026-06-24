@@ -43,6 +43,7 @@ class FixRobotForceLearning : public Fix {
  int numforce;
  double ilow;
  double ihigh;
+ double alpha_T;
  int communication;
  NeighList *list = nullptr;
 
