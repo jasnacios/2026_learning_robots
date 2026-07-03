@@ -95,17 +95,25 @@ void FixControler::post_force(int vflag)
         //}
       }
     }
-
+    if (nc == 9) {
+      if (mask[i] & groupbit){
+        if (std::abs(I - w[0]) <= 0.15) {
+          Fa[i] = 0.1;
+        } else {
+          Fa[i] = 1.0;
+        }
+      }
+    }
     if (nc ==10) {
     if (mask[i] & groupbit){
-      Fa[i] = 1.2 - std::exp(-(I-w[0])*(I-w[0])/0.01);
+      Fa[i] = 1.0 - 0.9* std::exp(-(I-w[0])*(I-w[0])/0.01);
       }
     }
 
     if (nc ==1) {
     if (mask[i] & groupbit) 
         if (I >= w[0]) {
-          Fa[i] = 0.2;
+          Fa[i] = 0.1;
         } else {
           Fa[i] = 1.0;
         }

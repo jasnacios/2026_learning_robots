@@ -75,6 +75,7 @@
 #include "fix_store_state.h"
 #include "fix_temp_berendsen.h"
 #include "fix_temp_rescale.h"
+#include "fix_test_learning.h"
 #include "fix_thermal_conductivity.h"
 #include "fix_vector.h"
 #include "fix_viscous.h"

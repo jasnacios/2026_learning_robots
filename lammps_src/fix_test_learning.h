@@ -6,48 +6,45 @@
 
 #ifdef FIX_CLASS
 
-FixStyle(robot_force_learning,FixRobotForceLearning)
+FixStyle(test_learning,FixTestLearning)
 
 #else
 
-#ifndef LMP_FIX_ROBOT_FORCE_LEARNING_H
-#define LMP_FIX_ROBOT_FORCE_LEARNING_H
+#ifndef LMP_FIX_TEST_LEARNING_H
+#define LMP_FIX_TEST_LEARNING_H
 
 #include "fix.h"
-#include "neigh_request.h"
 
 namespace LAMMPS_NS {
 
-class FixRobotForceLearning : public Fix {
+class FixTestLearning : public Fix {
  public:
-  FixRobotForceLearning(class LAMMPS *, int, char **);
-  ~FixRobotForceLearning();
+  FixTestLearning(class LAMMPS *, int, char **);
+  ~FixTestLearning();
   int setmask();
   void setup(int);
   void init();
-  void init_list(int, class NeighList *)override;
-  void post_force(int)override;
- 
+  void post_force(int);
+
  private:
  class RanMars *random;
  int seed;
  int Nn;
  double alphaq;
+ 
 
  char* idregion0;
  class Region *region0;
  char* idregion1;
  class Region *region1;
- double comm_radius;
- double dt;
- int numforce;
+
+ double alphaT;
+
  double ilow;
  double ihigh;
- double alpha_T;
- int communication;
- int comm_period;
- int comm_clock;
- NeighList *list = nullptr;
+ double comm_radius;
+ double dt;
+ double communication_flag;
 
 };
 

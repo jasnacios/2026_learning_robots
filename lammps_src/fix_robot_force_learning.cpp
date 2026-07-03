@@ -25,7 +25,7 @@ using namespace FixConst;
 FixRobotForceLearning::FixRobotForceLearning(LAMMPS *lmp, int narg, char **arg) :
 Fix(lmp, narg, arg)
 {
-  if (narg < 14) error->all(FLERR,"Illegal fix robot_force_learning command");
+  if (narg < 15) error->all(FLERR,"Illegal fix robot_force_learning command");
   
  
   alphaq = utils::numeric(FLERR,arg[3],false,lmp);
@@ -39,6 +39,8 @@ Fix(lmp, narg, arg)
   ilow = utils::numeric(FLERR,arg[11],false,lmp);
   ihigh = utils::numeric(FLERR,arg[12],false,lmp);
   alpha_T = utils::numeric(FLERR,arg[13],false,lmp);
+  comm_period = utils::numeric(FLERR,arg[14],false,lmp);
+  
 
   random = new RanMars(lmp, seed + comm->me);
   region0 = domain->get_region_by_id(arg[4]);
@@ -52,25 +54,25 @@ FixRobotForceLearning::~FixRobotForceLearning()
 {
   delete random;
 }
-
 /* ---------------------------------------------------------------------- */
 
 void FixRobotForceLearning::init()
 {
   dt = update->dt;
+  comm_clock = 0;
   int nall = atom->nlocal + atom->nghost;
   double *qreward = atom->qreward;
   double **poidsnn = atom->poidsnn;
 
   
-  auto req = neighbor->add_request(this, NeighConst::REQ_FULL);
-  req->set_id(1);
+  auto req = neighbor->add_request(this, NeighConst::REQ_FULL| NeighConst::REQ_OCCASIONAL);
   req->set_cutoff(comm_radius);
+
   
 }
 void FixRobotForceLearning::init_list(int id, NeighList *ptr)
 {
-  if (id == 1) list = ptr;
+list = ptr;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -92,7 +94,8 @@ void FixRobotForceLearning::setup(int vflag)
 /* ---------------------------------------------------------------------- */
 
 void FixRobotForceLearning::post_force(int vflag)
-{
+{ 
+  neighbor->build_one(list);
 
   int i, j, ii, jj, inum, jnum;
   double xtmp, ytmp, ztmp, delx, dely, delz;
@@ -121,7 +124,7 @@ void FixRobotForceLearning::post_force(int vflag)
 
   const double epsilon = 1.0e-10;
   const double comm_radius_sq = comm_radius * comm_radius;
-  
+
   if (step<1){
     for (int i = 0; i < nlocal; i++) {
         qreward[i] = 0.0;
@@ -141,108 +144,169 @@ void FixRobotForceLearning::post_force(int vflag)
         dw[i][k] = 0.0;
       }
     }
-
     if (communication ==1){  // Communication 1: échange de poids et de score entre agents
+      
 
-      if (numforce == 1){
-
-        for (ii = 0; ii < inum; ii++) {
-          
-          i = ilist[ii];
-          xtmp = x[i][0];
-          ytmp = x[i][1];
-          ztmp = x[i][2];
+      comm_clock++;
+      
+      if (comm_clock>= comm_period){
+        if (numforce == 1){
+          //int count_exchange = 0;
+          //int count_minj = 0;
+          for (ii = 0; ii < inum; ii++) {
             
-          jlist = firstneigh[i];
-          jnum = numneigh[i];
-
-          double min_dist = 100;
-          int ppv = -1;
-          std::vector<int> pareilquei;
-
-          if (random -> uniform() < alpha_T) {
-
-            for (jj = 0; jj < jnum; jj++) {
-              j = jlist[jj];
-              j &= NEIGHMASK;
-          
-              delx = xtmp - x[j][0];
-              dely = ytmp - x[j][1];
-              delz = ztmp - x[j][2];
-              rsq = delx * delx + dely * dely + delz * delz;
+            i = ilist[ii];
+            xtmp = x[i][0];
+            ytmp = x[i][1];
+            ztmp = x[i][2];
               
-              if (rsq <= comm_radius_sq) {
-                if (rsq< min_dist)  {
-                  min_dist = rsq;
-                  ppv = j;
+            jlist = firstneigh[i];
+            jnum = numneigh[i];
+
+            double min_dist = 100;
+            int ppv = -1;
+            std::vector<int> pareilquei;
+
+            if (random -> uniform() < alpha_T) {
+
+              for (jj = 0; jj < jnum; jj++) {
+                j = jlist[jj];
+                j &= NEIGHMASK;
+                
+                if (j == i) continue;
+                if (atom->tag[j] == atom->tag[i]) continue;
+            
+                delx = xtmp - x[j][0];
+                dely = ytmp - x[j][1];
+                delz = ztmp - x[j][2];
+                rsq = delx * delx + dely * dely + delz * delz;
+                
+                if (rsq <= comm_radius_sq) {
+                  if (rsq< min_dist)  {
+                    min_dist = rsq;
+                    ppv = j;
+                  }
                 }
               }
-            }
-            if (ppv>=0 && qreward[i]<qreward[ppv]-epsilon) {
-
-              dreward[i] = qreward[ppv] - qreward[i];
-              for (int k = 0; k<Nn; k++) {
-                dw[i][k] = poidsnn[ppv][k] - poidsnn[i][k]; 
-              }
-
-            }
-            else if (ppv>=0 && fabs(qreward[ppv] - qreward[i]) <= epsilon) {
-
-              if (random->uniform() < 0.5) {
+              //if (ppv >= 0) count_minj++;
+              if (ppv>=0 && qreward[i]<qreward[ppv]-epsilon) {
+                //count_exchange++;
                 dreward[i] = qreward[ppv] - qreward[i];
                 for (int k = 0; k<Nn; k++) {
                   dw[i][k] = poidsnn[ppv][k] - poidsnn[i][k]; 
                 }
+
+              }
+              else if (ppv>=0 && fabs(qreward[ppv] - qreward[i]) <= epsilon) {
+
+                if (random->uniform() < 0.5) {
+                  dreward[i] = qreward[ppv] - qreward[i];
+                  for (int k = 0; k<Nn; k++) {
+                    dw[i][k] = poidsnn[ppv][k] - poidsnn[i][k]; 
+                  }
+                }
+              }
+            }
+          }
+          /*if (update->ntimestep % 1000 == 0 && comm->me == 0)
+        fprintf(screen, "Step %ld: échanges=%d\n", 
+            update->ntimestep, count_exchange, inum);
+        if (update->ntimestep % 1000 == 0 && comm->me == 0)
+        fprintf(screen, "Step %ld: ppv trouvé pour %d/%d atomes\n", 
+            update->ntimestep, count_minj, inum);*/
+        }
+        else if (numforce == 3){
+
+          for (ii = 0; ii < inum; ii++) {
+            
+            i = ilist[ii];
+            xtmp = x[i][0];
+            ytmp = x[i][1];
+            ztmp = x[i][2];
+              
+            jlist = firstneigh[i];
+            jnum = numneigh[i];
+
+            double min_dist = 100;
+            int ppv = -1;
+            std::vector<int> pareilquei;
+
+            if (random -> uniform() < alpha_T) {
+              for (jj = 0; jj < jnum; jj++) {
+                j = jlist[jj];
+                j &= NEIGHMASK;
+            
+                delx = xtmp - x[j][0];
+                dely = ytmp - x[j][1];
+                delz = ztmp - x[j][2];
+                rsq = delx * delx + dely * dely + delz * delz;
+                
+                if (rsq <= comm_radius_sq) {
+                  if (rsq< min_dist)  {
+                    min_dist = rsq;
+                    ppv = j;
+                  }
+                }
+              }
+              if (ppv>=0 && qreward[i]<qreward[ppv]-epsilon) {
+
+                dreward[i] = qreward[ppv] - qreward[i];
+                for (int k = 0; k<Nn; k++) {
+                  dw[i][k] = poidsnn[ppv][k] - poidsnn[i][k];
+                }
               }
             }
           }
         }
-      }
-      else if (numforce == 3){
+        else if (numforce == 2){
 
-        for (ii = 0; ii < inum; ii++) {
-          
-          i = ilist[ii];
-          xtmp = x[i][0];
-          ytmp = x[i][1];
-          ztmp = x[i][2];
+          for (ii = 0; ii < inum; ii++) {
             
-          jlist = firstneigh[i];
-          jnum = numneigh[i];
+            i = ilist[ii];
+            xtmp = x[i][0];
+            ytmp = x[i][1];
+            ztmp = x[i][2];
+              
+            jlist = firstneigh[i];
+            jnum = numneigh[i];
 
-          double min_dist = 100;
-          int ppv = -1;
-          std::vector<int> pareilquei;
-
-          if (random -> uniform() < alpha_T) {
+            
             for (jj = 0; jj < jnum; jj++) {
               j = jlist[jj];
               j &= NEIGHMASK;
-          
+
+              if (j == i) continue;
+              if (atom->tag[j] == atom->tag[i]) continue;
+
+
               delx = xtmp - x[j][0];
               dely = ytmp - x[j][1];
               delz = ztmp - x[j][2];
               rsq = delx * delx + dely * dely + delz * delz;
-              
-              if (rsq <= comm_radius_sq) {
-                if (rsq< min_dist)  {
-                  min_dist = rsq;
-                  ppv = j;
-                }
-              }
-            }
-            if (ppv>=0 && qreward[i]<qreward[ppv]-epsilon) {
 
-              dreward[i] = qreward[ppv] - qreward[i]; // alpha*(qreward[ppv] - qreward[i])*dt;
-              for (int k = 0; k<Nn; k++) {
-                dw[i][k] = poidsnn[ppv][k] - poidsnn[i][k];// alpha*(poidsnn[ppv][k] - poidsnn[i][k])*dt;
+              if (random -> uniform()< alpha_T && rsq <= comm_radius_sq) {
+                if (qreward[i]<qreward[j]-epsilon) {
+                  dreward[i] = qreward[j] - qreward[i];
+                  for (int k = 0; k<Nn; k++) {
+                    dw[i][k] = poidsnn[j][k] - poidsnn[i][k];
+                  }
+                }
+                else if (fabs(qreward[j] - qreward[i]) <= epsilon) {
+                  if (random->uniform() < 0.5) {
+                    dreward[i] = qreward[j] - qreward[i];
+                    for (int k = 0; k<Nn; k++) {
+                      dw[i][k] = poidsnn[j][k] - poidsnn[i][k];
+                    }
+                  }
+                }
               }
             }
           }
         }
+        comm_clock = 0;
       }
     }
-
+    
     for (int i = 0; i < nlocal; i++) {
       if (mask[i] & groupbit) {
         if(region0->match(x[i][0], x[i][1], x[i][2])|| region1->match(x[i][0], x[i][1], x[i][2])) {
@@ -255,6 +319,7 @@ void FixRobotForceLearning::post_force(int vflag)
       }
     }  
   }
+  
 }
 
 
