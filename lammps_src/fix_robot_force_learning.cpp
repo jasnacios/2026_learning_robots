@@ -127,7 +127,7 @@ void FixRobotForceLearning::post_force(int vflag)
 
   if (step<1){
     for (int i = 0; i < nlocal; i++) {
-        qreward[i] = 0.0;
+        qreward[i] = random->uniform();
         dreward[i] = 0.0;
         
         for (int k = 0; k < Nn; k++) {
@@ -286,9 +286,11 @@ void FixRobotForceLearning::post_force(int vflag)
 
               if (random -> uniform()< alpha_T && rsq <= comm_radius_sq) {
                 if (qreward[i]<qreward[j]-epsilon) {
-                  dreward[i] = qreward[j] - qreward[i];
+                  qreward[i] = qreward[j];
+                  //dreward[i] = qreward[j] - qreward[i];
                   for (int k = 0; k<Nn; k++) {
-                    dw[i][k] = poidsnn[j][k] - poidsnn[i][k];
+                    poidsnn[i][k] = poidsnn[j][k];
+                    //dw[i][k] = poidsnn[j][k] - poidsnn[i][k];
                   }
                 }
                 else if (fabs(qreward[j] - qreward[i]) <= epsilon) {
@@ -303,17 +305,64 @@ void FixRobotForceLearning::post_force(int vflag)
             }
           }
         }
+        else if (numforce == 10){ // copie un random parmi les voisins si meilleur
+
+          for (ii = 0; ii < inum; ii++) {
+            
+            i = ilist[ii];
+            xtmp = x[i][0];
+            ytmp = x[i][1];
+            ztmp = x[i][2];
+              
+            jlist = firstneigh[i];
+            jnum = numneigh[i];
+
+            if (jnum == 0)
+              continue;
+
+            int jj = static_cast<int>(random->uniform() * jnum);
+
+            int j = jlist[jj];
+            j &= NEIGHMASK;
+
+            if (j == i) continue;
+            if (atom->tag[j] == atom->tag[i]) continue;
+
+            delx = xtmp - x[j][0];
+            dely = ytmp - x[j][1];
+            delz = ztmp - x[j][2];
+            rsq = delx * delx + dely * dely + delz * delz;
+
+            if (random -> uniform()< alpha_T && rsq <= comm_radius_sq) {
+              if (qreward[i]<qreward[j]-epsilon) {
+                dreward[i] = qreward[j] - qreward[i];
+                for (int k = 0; k<Nn; k++) {
+                  dw[i][k] = poidsnn[j][k] - poidsnn[i][k];
+                }
+              }
+              else if (fabs(qreward[j] - qreward[i]) <= epsilon) {
+                  if (random->uniform() < 0.5) {
+                    dreward[i] = qreward[j] - qreward[i];
+                    for (int k = 0; k<Nn; k++) {
+                      dw[i][k] = poidsnn[j][k] - poidsnn[i][k];
+                    }
+                  }
+              }
+            }
+          }
+        }
         comm_clock = 0;
       }
     }
     
     for (int i = 0; i < nlocal; i++) {
       if (mask[i] & groupbit) {
-        if(region0->match(x[i][0], x[i][1], x[i][2])|| region1->match(x[i][0], x[i][1], x[i][2])) {
+        /*if(region0->match(x[i][0], x[i][1], x[i][2])|| region1->match(x[i][0], x[i][1], x[i][2])) {
           lightintensity[i] = ihigh;
         } else {
           lightintensity[i] = ilow;
-        } 
+        }*/
+        lightintensity[i] = (1 - std::abs(x[i][0])/250);
         qreward[i] += dreward[i];
         dreward[i] = alphaq*(lightintensity[i] - qreward[i]) *dt;
       }

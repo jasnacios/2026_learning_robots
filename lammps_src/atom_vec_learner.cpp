@@ -45,7 +45,7 @@ AtomVecLearner::AtomVecLearner(LAMMPS *lmp) : AtomVec(lmp)
   
   fields_copy = { "poidsnn", "dpoids", "qreward", "dreward", "lightintensity"};
   fields_comm = { "poidsnn", "qreward"};
-  // fields_reverse = { "poidsnn", "qreward", "lightintensity"};
+  //fields_reverse = {  "dpoids", "dreward"}; //"poidsnn", "qreward",, "lightintensity"
 
 
   fields_border = { "poidsnn", "qreward", "lightintensity"};

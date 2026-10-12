@@ -109,13 +109,32 @@ void FixControler::post_force(int vflag)
       Fa[i] = 1.0 - 0.9* std::exp(-(I-w[0])*(I-w[0])/0.01);
       }
     }
+    if (nc ==11){
+      double delta = 0.05; // 0.075;
+      double a = 100;
+      if (mask[i] & groupbit){
+        Fa[i] = 0.9*(1.0 + 0.5*(std::tanh(a*(I- w[0]- delta)) - std::tanh(a*(I-w[0]+delta)))) + 0.1;
+      }
+    }
+    if (nc ==12){
+      double Il = 0.8;
+      double Io = 0.2;
+      if (mask[i] & groupbit){
+        Fa[i] = 1+ 0.9*2*((I - (Il+Io)/2)/(Il-Io))*(- std::exp(-(Il-w[0])*(Il-w[0])/0.01)- 0.5*std::exp(-(Io-w[0])*(Io-w[0])/0.01)+ std::exp(-(0.5-w[0])*(0.5-w[0])/0.01));
+      }
+    }
+     if (nc ==13) {
+    if (mask[i] & groupbit){
+      Fa[i] = 0.5*(2.0 - 0.9* std::exp(-(I-w[0])*(I-w[0])/0.01) - 0.9* std::exp(-(I-w[1])*(I-w[1])/0.01));
+      }
+    }
 
     if (nc ==1) {
     if (mask[i] & groupbit) 
         if (I >= w[0]) {
-          Fa[i] = 0.1;
+          Fa[i] =5.0;
         } else {
-          Fa[i] = 1.0;
+          Fa[i] = 50.0;
         }
       }
 // test pour END to END 
