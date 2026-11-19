@@ -40,12 +40,12 @@ AtomVecLearner::AtomVecLearner(LAMMPS *lmp) : AtomVec(lmp)
   // except: fields_data_atom & fields_data_vel must match data file
   
   fields_create = { "poidsnn","dpoids", "qreward", "dreward", "lightintensity"};
-  fields_exchange = { "poidsnn", "dpoids", "qreward", "dreward", "lightintensity"};
+  fields_exchange = { "poidsnn", "qreward", "lightintensity"};
   fields_grow = { "poidsnn", "dpoids", "qreward", "dreward", "lightintensity"};
   
   fields_copy = { "poidsnn", "dpoids", "qreward", "dreward", "lightintensity"};
   fields_comm = { "poidsnn", "qreward"};
-  //fields_reverse = {  "dpoids", "dreward"}; //"poidsnn", "qreward",, "lightintensity"
+  fields_reverse = {  "dpoids", "dreward"}; //"poidsnn", "qreward",, "lightintensity"
 
 
   fields_border = { "poidsnn", "qreward", "lightintensity"};

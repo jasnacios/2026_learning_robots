@@ -24,11 +24,11 @@ class FixRobotForceLearningG : public Fix {
   ~FixRobotForceLearningG();
   int setmask();
   void setup(int);
-  void setup_pre_reverse(int,int);
+  void setup_pre_reverse(int,int)override;
   void init();
   void init_list(int, class NeighList *)override;
   void post_force(int)override;
-  void pre_reverse_comm(int, int);
+  void pre_reverse(int, int)override;
  
  private:
  class RanMars *random;
@@ -36,20 +36,14 @@ class FixRobotForceLearningG : public Fix {
  int Nn;
  double alphaq;
 
- char* idregion0;
- class Region *region0;
- char* idregion1;
- class Region *region1;
+ 
  double comm_radius;
  double dt;
- int numforce;
- double ilow;
- double ihigh;
- double alpha_T;
+ 
  int communication;
- int comm_period;
- int comm_clock;
+
  NeighList *list = nullptr;
+ 
  int N;
  double lambda_T;
 

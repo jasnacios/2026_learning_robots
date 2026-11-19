@@ -81,6 +81,9 @@ void FixIntegrationLearning::end_of_step()
     for (int i = 0; i < nlocal; i++) {
       if (mask[i] & groupbit) {
         qreward[i] += dreward[i];
+        //if (qreward[i]>=0.65){qreward[i] = 0.65;}
+        //if (qreward[i]<=0.35){qreward[i] = 0.35;}
+
         for(int k=0;k<Nn;k++) {
           poidsnn[i][k] +=  dpoids[i][k] + random->gaussian() * sqrt(2*dt*Dp);
         }

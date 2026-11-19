@@ -110,7 +110,7 @@ void FixControler::post_force(int vflag)
       }
     }
     if (nc ==11){
-      double delta = 0.05; // 0.075;
+      double delta = 0.075;
       double a = 100;
       if (mask[i] & groupbit){
         Fa[i] = 0.9*(1.0 + 0.5*(std::tanh(a*(I- w[0]- delta)) - std::tanh(a*(I-w[0]+delta)))) + 0.1;
@@ -132,9 +132,9 @@ void FixControler::post_force(int vflag)
     if (nc ==1) {
     if (mask[i] & groupbit) 
         if (I >= w[0]) {
-          Fa[i] =5.0;
+          Fa[i] =1;
         } else {
-          Fa[i] = 50.0;
+          Fa[i] = 10;
         }
       }
 // test pour END to END 
